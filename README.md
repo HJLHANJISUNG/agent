@@ -7,14 +7,14 @@
 ```
 app/
 ├── backend/            # FastAPI 后端
-│   ├── database/       # 數據庫相關代碼
+│   ├── database/       # 数据库相关代码
 │   ├── routers/        # API 路由
-│   └── requirements.txt # Python 依賴
+│   └── requirements.txt # Python 依赖
 ├── lib/                # Flutter 前端
 ├── docker-compose.yml  # Docker 配置
-├── Dockerfile.backend  # 後端 Docker 配置
+├── Dockerfile.backend  # 后端 Docker 配置
 ├── Dockerfile.frontend # 前端 Docker 配置
-└── init-db.sql         # 數據庫初始化腳本
+└── init-db.sql         # 数据库初始化脚本
 ```
 
 ## 使用 Docker 快速部署
