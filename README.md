@@ -1,12 +1,12 @@
-# IP 智慧解答專家
+# IP 智慧解答专家
 
-這是一個使用 Flutter 和 FastAPI 構建的 AI 聊天應用程序，專門用於解答 IP 網絡相關問題。
+这是一个使用 Flutter 和 FastAPI 构建的 AI 聊天应用程序，专门用于解答 IP 网络相关问题。
 
-## 項目結構
+## 项目结构
 
 ```
 app/
-├── backend/            # FastAPI 後端
+├── backend/            # FastAPI 后端
 │   ├── database/       # 數據庫相關代碼
 │   ├── routers/        # API 路由
 │   └── requirements.txt # Python 依賴
