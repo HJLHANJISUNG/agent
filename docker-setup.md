@@ -1,62 +1,62 @@
-# Docker 容器化設置指南
+# Docker 容器化设置指南
 
-本指南將幫助您的團隊使用 Docker 快速部署整個 IP 智慧解答專家系統。
+本指南将帮助您的团队使用 Docker 快速部署整个 IP 智慧解答专家系统。
 
-## 檔案說明
+## 文件说明
 
-我們提供了以下 Docker 相關檔案：
+我们提供了以下 Docker 相关文件：
 
-1. `Dockerfile.backend` - 後端服務容器配置
-2. `Dockerfile.frontend` - 前端服務容器配置
-3. `docker-compose.yml` - 多容器應用配置
-4. `init-db.sql` - 數據庫初始化腳本
+1. `Dockerfile.backend` - 后端服务容器配置
+2. `Dockerfile.frontend` - 前端服务容器配置
+3. `docker-compose.yml` - 多容器应用配置
+4. `init-db.sql` - 数据库初始化脚本
 
-## 快速開始
+## 快速开始
 
-### 1. 安裝 Docker
+### 1. 安装 Docker
 
-如果您還沒有安裝 Docker，請按照以下步驟安裝：
+如果您还没有安装 Docker，请按照以下步骤安装：
 
-- **Windows**: 下載並安裝 [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
-- **macOS**: 下載並安裝 [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
-- **Linux**: 根據您的發行版，使用包管理器安裝 Docker 和 Docker Compose
+- **Windows**: 下载并安装 [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
+- **macOS**: 下载并安装 [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
+- **Linux**: 根据您的发行版，使用包管理器安装 Docker 和 Docker Compose
 
-### 2. 設置環境變數
+### 2. 设置环境变量
 
-在專案根目錄創建 `.env` 文件：
+在项目根目录创建 `.env` 文件：
 
 ```bash
-# 複製示例文件
+# 复制示例文件
 cp .env.example .env
 
-# 編輯 .env 文件，設置您的 API 密鑰
-# 將 your_api_key_here 替換為您的實際 API 密鑰
+# 编辑 .env 文件，设置您的 API 密钥
+# 将 your_api_key_here 替换为您的实际 API 密钥
 ```
 
-### 3. 啟動服務
+### 3. 启动服务
 
 ```bash
-# 構建並啟動所有服務
+# 构建并启动所有服务
 docker-compose up -d
 
-# 查看服務狀態
+# 查看服务状态
 docker-compose ps
 
-# 查看日誌
+# 查看日志
 docker-compose logs -f
 ```
 
-### 4. 訪問服務
+### 4. 访问服务
 
 - **前端界面**: http://localhost:8080
-- **後端 API**: http://localhost:8000
-- **API 文檔**: http://localhost:8000/docs
+- **后端 API**: http://localhost:8000
+- **API 文档**: http://localhost:8000/docs
 
-## 常見問題解決
+## 常见问题解决
 
-### 1. 容器無法啟動
+### 1. 容器无法启动
 
-檢查日誌以獲取詳細錯誤信息：
+检查日志以获取详细错误信息：
 
 ```bash
 docker-compose logs backend
@@ -64,43 +64,43 @@ docker-compose logs frontend
 docker-compose logs db
 ```
 
-### 2. 數據庫連接問題
+### 2. 数据库连接问题
 
-確保數據庫容器正在運行：
+确保数据库容器正在运行：
 
 ```bash
 docker-compose ps db
 ```
 
-如果數據庫容器已啟動但後端無法連接，檢查連接字符串：
+如果数据库容器已启动但后端无法连接，检查连接字符串：
 
 ```bash
-# 檢查 docker-compose.yml 中的環境變數
+# 检查 docker-compose.yml 中的环境变量
 # DATABASE_URL=mysql+mysqlconnector://root:123456@db:3306/agentai_db
 ```
 
-### 3. 前端無法連接後端
+### 3. 前端无法连接后端
 
-檢查前端代碼中的 API 基礎 URL 是否正確配置。在開發環境中，應該指向 `http://localhost:8000/api`。
+检查前端代码中的 API 基础 URL 是否正确配置。在开发环境中，应该指向 `http://localhost:8000/api`。
 
-### 4. 重建服務
+### 4. 重建服务
 
-如果您修改了 Dockerfile 或代碼，需要重新構建服務：
+如果您修改了 Dockerfile 或代码，需要重新构建服务：
 
 ```bash
-# 重新構建並啟動特定服務
+# 重新构建并启动特定服务
 docker-compose up -d --build backend
 
-# 重新構建所有服務
+# 重新构建所有服务
 docker-compose up -d --build
 ```
 
-## 數據持久化
+## 数据持久化
 
-數據存儲在 Docker 卷中，即使容器被刪除，數據也會保留：
+数据存储在 Docker 卷中，即使容器被删除，数据也会保留：
 
-- **MySQL 數據**: 存儲在 `mysql_data` 卷中
-- **上傳文件**: 存儲在 `backend_uploads` 卷中
+- **MySQL 数据**: 存储在 `mysql_data` 卷中
+- **上传文件**: 存储在 `backend_uploads` 卷中
 
 查看卷：
 
@@ -108,17 +108,17 @@ docker-compose up -d --build
 docker volume ls
 ```
 
-## 生產環境部署
+## 生产环境部署
 
-對於生產環境，建議進行以下額外配置：
+对于生产环境，建议进行以下额外配置：
 
-1. 使用 HTTPS 保護通信
-2. 設置更強的數據庫密碼
+1. 使用 HTTPS 保护通信
+2. 设置更强的数据库密码
 3. 限制 CORS 策略
-4. 配置適當的日誌記錄
-5. 設置資源限制
+4. 配置适当的日志记录
+5. 设置资源限制
 
-修改 `docker-compose.yml` 中的環境變數：
+修改 `docker-compose.yml` 中的环境变量：
 
 ```yaml
 environment:
@@ -126,18 +126,18 @@ environment:
   - DATABASE_URL=mysql+mysqlconnector://user:strong_password@db:3306/agentai_db
 ```
 
-## 團隊協作
+## 团队协作
 
-使用 Docker 的好處是每個團隊成員都可以在相同的環境中工作，避免「在我的機器上可以運行」的問題。
+使用 Docker 的好处是每个团队成员都可以在相同的环境中工作，避免"在我的机器上可以运行"的问题。
 
-新團隊成員只需執行：
+新团队成员只需执行：
 
 ```bash
 git clone <repository-url>
 cd app
 cp .env.example .env
-# 編輯 .env 文件
+# 编辑 .env 文件
 docker-compose up -d
 ```
 
-即可獲得完全相同的開發環境。
+即可获得完全相同的开发环境。

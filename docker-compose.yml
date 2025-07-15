@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  # MySQL 數據庫服務
+  # MySQL 数据库服务
   db:
     image: mysql:8.0
     container_name: agentai-mysql
@@ -20,7 +20,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # FastAPI 後端服務
+  # FastAPI 后端服务
   backend:
     build:
       context: .

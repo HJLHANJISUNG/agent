@@ -1,27 +1,27 @@
-# Flutter 前端專用 Dockerfile
+# Flutter 前端专用 Dockerfile
 FROM debian:bullseye
 
-# 安裝系統依賴
+# 安装系统依赖
 RUN apt-get update && apt-get install -y \
     git curl unzip xz-utils zip libglu1-mesa
 
-# 安裝 Flutter SDK
+# 安装 Flutter SDK
 RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
 
-# 設置 PATH
+# 设置 PATH
 ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
-# 預先執行 flutter doctor 以初始化
+# 预先执行 flutter doctor 以初始化
 RUN flutter doctor
 
-# 設置工作目錄
+# 设置工作目录
 WORKDIR /app
 
-# 複製前端專案檔案
+# 复制前端项目文件
 COPY . /app
 
-# 安裝 Dart/Flutter 依賴
+# 安装 Dart/Flutter 依赖
 RUN flutter pub get
 
-# 預設命令（可根據需求調整）
+# 预设命令（可根据需求调整）
 CMD ["flutter", "--version"] 
