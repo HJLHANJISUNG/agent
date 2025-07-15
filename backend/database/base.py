@@ -84,6 +84,8 @@ class Feedback(Base):
     solution_id = Column(String(255), ForeignKey("solutions.solution_id"), nullable=False)
     rating = Column(Integer, nullable=True, comment="使用者給出的評分")
     comment = Column(Text, nullable=True)
+    status = Column(String(255), nullable=True, default="待處理", comment="反饋狀態: 待處理, 處理中, 已處理")
+    created_at = Column(DateTime, server_default=func.now(), comment="創建時間")
     
     owner = relationship("User", back_populates="feedbacks")
     solution = relationship("Solution", back_populates="feedbacks") 

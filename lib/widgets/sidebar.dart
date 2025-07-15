@@ -149,7 +149,7 @@ class Sidebar extends StatelessWidget {
           _buildNavItem('首页', Icons.home, 0, context),
           _buildNavItem('问答', Icons.chat, 1, context),
           _buildNavItem('知识库', Icons.library_books, 2, context),
-          if (isAdmin) _buildNavItem('看板', Icons.dashboard, 3, context),
+          _buildNavItem('看板', Icons.dashboard, 3, context), // 所有用戶都能看到看板
           const Spacer(),
 
           // 收合按鈕

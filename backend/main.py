@@ -5,17 +5,30 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database.base import Base
-from .database.database import engine
-from .routers import users, chat, feedbacks, protocols, knowledge
+# 使用正確的導入路徑
+from database.base import Base
+from database.database import engine
+from routers import users, chat, feedbacks, protocols, knowledge
 
 # Create all database tables
+# 修改為 drop_all 然後 create_all 以確保表結構更新
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Set up CORS
-origins = ["*"] # Allow all origins
+# 更新CORS設置 - 明確列出所有可能的源
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+    "http://127.0.0.1",
+    "http://127.0.0.1:8080",
+    "http://10.0.2.2:8080",
+    "http://10.0.2.2",
+    "capacitor://localhost",
+    "ionic://localhost",
+    "*",  # 允許所有來源，僅用於開發環境
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +36,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Include the routers

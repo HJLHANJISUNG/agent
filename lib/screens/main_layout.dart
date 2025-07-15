@@ -33,11 +33,7 @@ class MainLayoutState extends State<MainLayout> {
   }
 
   void switchPage(int index) {
-    // 检查看板页面权限
-    if (index == 3 && !isAdmin) {
-      _showAdminRequiredDialog();
-      return;
-    }
+    // 看板頁面對所有人開放，管理員可以看到更多詳細資料
     setState(() {
       currentPageIndex = index;
     });
@@ -179,7 +175,7 @@ class MainLayoutState extends State<MainLayout> {
       case 2:
         return const KnowledgePage();
       case 3:
-        return const DashboardPage();
+        return DashboardPage(isAdmin: isAdmin);
       default:
         return HomePage(isAdmin: isAdmin);
     }

@@ -1,4 +1,4 @@
-from .database.base import (
+from database.base import (
     Base,
     User,
     Protocol,

@@ -59,6 +59,7 @@ class Solution(SolutionBase):
 class FeedbackBase(BaseModel):
     rating: int
     comment: Optional[str] = None
+    status: Optional[str] = "待處理"
 
 class FeedbackCreate(FeedbackBase):
     user_id: str
@@ -68,6 +69,7 @@ class Feedback(FeedbackBase):
     feedback_id: str
     user_id: str
     solution_id: str
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

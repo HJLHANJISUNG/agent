@@ -40,6 +40,29 @@ services:
       - ./backend:/app/backend
       - backend_uploads:/app/backend/static/uploads
 
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: agentai-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "8080:8080"
+    working_dir: /app
+    command:
+      [
+        "flutter",
+        "run",
+        "-d",
+        "web-server",
+        "--web-port=8080",
+        "--web-hostname=0.0.0.0",
+      ]
+    volumes:
+      - ./:/app
+
 volumes:
   mysql_data:
   backend_uploads:

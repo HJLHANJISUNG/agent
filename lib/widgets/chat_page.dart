@@ -8,6 +8,8 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:desktop_drop/desktop_drop.dart';
+import '../widgets/feedback_dialog.dart';
+import '../services/database_service.dart';
 // import 'aurora_background.dart'; // 不再需要引入
 
 class ChatPage extends StatefulWidget {
@@ -23,6 +25,54 @@ class _ChatPageState extends State<ChatPage> {
   bool _isLoading = false;
   String _typingText = '';
   List<PlatformFile> _selectedFiles = [];
+  final DatabaseService _databaseService = DatabaseService();
+
+  // 熱點問題列表結構
+  List<Map<String, dynamic>> _hotQuestionData = [];
+  List<String> get _hotQuestions =>
+      _hotQuestionData.map((q) => q['question'] as String).toList();
+
+  // 記錄熱點問題點擊次數
+  Map<String, int> _questionClickCount = {};
+
+  // 動畫控制器
+  bool _isHotQuestionsExpanded = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHotQuestions();
+  }
+
+  // 從後端獲取熱點問題
+  Future<void> _fetchHotQuestions() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${_databaseService.baseUrl}/chat/hot-questions'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        if (data is List) {
+          setState(() {
+            _hotQuestionData = List<Map<String, dynamic>>.from(data);
+          });
+        }
+      }
+    } catch (e) {
+      print('獲取熱點問題失敗: $e');
+      // 使用默認問題
+      setState(() {
+        _hotQuestionData = [
+          {"id": "1", "question": "如何配置 OSPF 協議？", "count": 156},
+          {"id": "2", "question": "BGP 路由通告失敗的常見原因", "count": 142},
+          {"id": "3", "question": "VLAN 間通信問題排查步驟", "count": 128},
+          {"id": "4", "question": "ACL 規則配置最佳實踐", "count": 115},
+          {"id": "5", "question": "STP 根橋選舉機制說明", "count": 98},
+        ];
+      });
+    }
+  }
 
   // API 配置
   // final String kimiApiKey =
@@ -150,55 +200,81 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
+    // 過濾重複的 assistant 氣泡，只保留最後一條內容不為空的 assistant 訊息
+    final List<Message> filteredMessages = [];
+    for (int i = 0; i < conversation.messages.length; i++) {
+      final msg = conversation.messages[i];
+      // 如果是 assistant，且內容為空，且不是最後一條，則跳過
+      if (msg.role == 'assistant' &&
+          msg.content.trim().isEmpty &&
+          i != conversation.messages.length - 1) {
+        continue;
+      }
+      // 如果是 assistant，且上一條也是 assistant，且內容為空，則跳過
+      if (msg.role == 'assistant' &&
+          msg.content.trim().isEmpty &&
+          i > 0 &&
+          conversation.messages[i - 1].role == 'assistant') {
+        continue;
+      }
+      filteredMessages.add(msg);
+    }
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: conversation.messages.length + (_isLoading ? 1 : 0),
+      itemCount: filteredMessages.length + (_isLoading ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == conversation.messages.length && _isLoading) {
+        if (index == filteredMessages.length && _isLoading) {
           return _buildTypingIndicator();
         }
-
-        final message = conversation.messages[index];
+        final message = filteredMessages[index];
         return _buildMessageBubble(message);
       },
     );
   }
 
   Widget _buildFeedbackButtons(Message message) {
+    if (message.solutionId == null) {
+      return const SizedBox.shrink();
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          icon: const Icon(Icons.thumb_up_outlined),
+          icon: const Icon(Icons.star_border),
           iconSize: 16,
-          color: Colors.grey[600],
+          color: Colors.amber[600],
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
-          tooltip: '赞同',
+          tooltip: '評價',
           onPressed: () {
-            // TODO: Handle positive feedback
-            _showFeedbackDialog(message, 1);
-          },
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.thumb_down_outlined),
-          iconSize: 16,
-          color: Colors.grey[600],
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          tooltip: '不认同',
-          onPressed: () {
-            // TODO: Handle negative feedback
-            _showFeedbackDialog(message, 0);
+            _showFeedbackDialog(message);
           },
         ),
       ],
     );
   }
 
-  void _showFeedbackDialog(Message message, int rating) {
+  void _showFeedbackDialog(Message message) {
+    if (message.solutionId == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => FeedbackDialog(
+        solutionId: message.solutionId!,
+        onFeedbackSubmitted: () {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('感謝您的反饋！')));
+        },
+      ),
+    );
+  }
+
+  // 舊的反饋對話框，已被替換
+  void _showOldFeedbackDialog(Message message, int rating) {
     final TextEditingController commentController = TextEditingController();
     showDialog(
       context: context,
@@ -259,6 +335,9 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildMessageBubble(Message message) {
     final isUser = message.role == 'user';
 
+    // 檢查消息內容是否顯示為思考中狀態
+    final isThinking = message.content == '思考中...';
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -310,27 +389,30 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildTypingIndicator() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: const Color(0xFFE60012),
-            child: Text('AI', style: TextStyle(color: Colors.white)),
+  // 閃爍的光標點
+  Widget _buildBlinkingDot() {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        // 啟動一個計時器來閃爍光標
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            setState(() {});
+          }
+        });
+
+        return Text(
+          DateTime.now().millisecondsSinceEpoch % 1000 < 500 ? '|' : '',
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Text('正在思考中...'),
-          ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Widget _buildTypingIndicator() {
+    return SizedBox.shrink(); // 直接不顯示任何內容
   }
 
   Widget _buildInputArea(ConversationService service) {
@@ -342,6 +424,135 @@ class _ChatPageState extends State<ChatPage> {
       ),
       child: Column(
         children: [
+          // 熱點問題提示框
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: double.infinity,
+            height: _isHotQuestionsExpanded ? null : 40,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isHotQuestionsExpanded = !_isHotQuestionsExpanded;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 8),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.trending_up,
+                          size: 16,
+                          color: Color(0xFFE60012),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          '熱門問題：',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF666666),
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          _isHotQuestionsExpanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          size: 18,
+                          color: const Color(0xFF666666),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_isHotQuestionsExpanded)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _hotQuestionData.map((questionData) {
+                        final question = questionData['question'] as String;
+                        final count = questionData['count'] as int? ?? 0;
+                        final clickCount = _questionClickCount[question] ?? 0;
+                        final hasBeenClicked = clickCount > 0;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InkWell(
+                            onTap: () => _onHotQuestionTap(questionData),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: hasBeenClicked
+                                    ? const Color(0xFFFFF8E1)
+                                    : const Color(0xFFF5F5F5),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: hasBeenClicked
+                                      ? const Color(0xFFFFB74D)
+                                      : const Color(0xFFE0E0E0),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    question,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: hasBeenClicked
+                                          ? const Color(0xFFE65100)
+                                          : const Color(0xFF333333),
+                                      fontWeight: hasBeenClicked
+                                          ? FontWeight.w500
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: hasBeenClicked
+                                          ? const Color(0xFFFFB74D)
+                                          : const Color(
+                                              0xFFE60012,
+                                            ).withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      hasBeenClicked
+                                          ? clickCount.toString()
+                                          : '$count+',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
           // 文件预览区域
           if (_selectedFiles.isNotEmpty)
             Container(
@@ -582,8 +793,30 @@ class _ChatPageState extends State<ChatPage> {
 
     final service = Provider.of<ConversationService>(context, listen: false);
 
+    // --- 新增：本地寫入 Question 表 ---
     try {
-      await service.sendMessage(text, files: _selectedFiles);
+      final userId = service.userId;
+      if (userId != null) {
+        final questionId = DateTime.now().millisecondsSinceEpoch.toString();
+        await DatabaseService().database.then(
+          (db) => db.insert('Question', {
+            'question_id': questionId,
+            'user_id': userId,
+            'content': text,
+            'image_url': null,
+            'ask_time': DateTime.now().toIso8601String(),
+            'solved': 0,
+          }),
+        );
+      }
+    } catch (e) {
+      print('本地寫入 Question 失敗: ' + e.toString());
+    }
+    // --- 新增結束 ---
+
+    try {
+      // 使用新的流式回應方法替代原來的方法
+      await service.sendMessageWithStream(text, files: _selectedFiles);
       _controller.clear();
       setState(() {
         _selectedFiles.clear();
@@ -614,5 +847,38 @@ class _ChatPageState extends State<ChatPage> {
         curve: Curves.easeOut,
       );
     }
+  }
+
+  // 向後端報告熱點問題點擊
+  Future<void> _reportQuestionClick(String questionId) async {
+    try {
+      await http.post(
+        Uri.parse(
+          '${_databaseService.baseUrl}/chat/hot-questions/$questionId/click',
+        ),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      print('報告問題點擊失敗: $e');
+      // 失敗時不做任何處理，這只是統計數據
+    }
+  }
+
+  void _onHotQuestionTap(Map<String, dynamic> questionData) {
+    final question = questionData['question'] as String;
+    final questionId = questionData['id'] as String;
+    final clickCount = _questionClickCount[question] ?? 0;
+
+    setState(() {
+      _questionClickCount[question] = clickCount + 1;
+    });
+
+    _controller.text = question;
+    _controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: question.length),
+    );
+
+    // 向後端報告點擊
+    _reportQuestionClick(questionId);
   }
 }

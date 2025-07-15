@@ -2,17 +2,14 @@ import os
 from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
+import sys
 
-# Build paths
-dotenv_path = Path(__file__).parent.parent / ".env"
-load_dotenv(dotenv_path=dotenv_path)
+# 添加父目錄到 sys.path，以便導入 config
+sys.path.append(str(Path(__file__).parent.parent))
+from config import settings
 
-# Get database URL from environment
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("No DATABASE_URL environment variable found")
-
+# 使用 config.py 中的設置
+DATABASE_URL = settings.DATABASE_URL
 print(f"Using database URL: {DATABASE_URL}")
 
 # Create engine
