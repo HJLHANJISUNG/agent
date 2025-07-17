@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # build 階段
 FROM debian:bullseye AS build
 
@@ -10,8 +11,10 @@ ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PAT
 
 WORKDIR /app
 COPY . /app
+
 RUN flutter pub get
 RUN flutter build web --release
+
 
 # 部署階段
 FROM caddy:2-alpine

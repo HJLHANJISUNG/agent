@@ -19,119 +19,119 @@ app/
 
 ## 使用 Docker 快速部署
 
-我們提供了 Docker 容器化配置，可以幫助您的團隊快速部署整個環境。
+我们提供了 Docker 容器化配置，可以帮助您的团队快速部署整个环境。
 
-### 前置條件
+### 前置条件
 
-- 安裝 [Docker](https://www.docker.com/get-started)
-- 安裝 [Docker Compose](https://docs.docker.com/compose/install/)
+- 安装 [Docker](https://www.docker.com/get-started)
+- 安装 [Docker Compose](https://docs.docker.com/compose/install/)
 
-### 快速開始
+### 快速开始
 
-1. 克隆代碼庫：
+1. 克隆代码库：
 
 ```bash
 git clone <repository-url>
 cd app
 ```
 
-2. 設置環境變數：
+2. 设置环境变量：
 
 ```bash
-# 創建 .env 文件
+# 创建 .env 文件
 echo "KIMI_API_KEY=your_api_key_here" > .env
 ```
 
-3. 使用 Docker Compose 啟動服務：
+3. 使用 Docker Compose 启动服务：
 
 ```bash
 docker-compose up -d
 ```
 
-4. 訪問應用：
+4. 访问应用：
    - 前端：http://localhost:8080
-   - 後端 API：http://localhost:8000
-   - API 文檔：http://localhost:8000/docs
+   - 后端 API：http://localhost:8000
+   - API 文档：http://localhost:8000/docs
 
-### 服務說明
+### 服务说明
 
-- **MySQL 數據庫**：運行在端口 3306
-- **FastAPI 後端**：運行在端口 8000
-- **Flutter Web 前端**：運行在端口 8080
+- **MySQL 数据库**：运行在端口 3306
+- **FastAPI 后端**：运行在端口 8000
+- **Flutter Web 前端**：运行在端口 8080
 
-### 開發模式
+### 开发模式
 
-如果您想在容器中進行開發，可以使用以下命令：
+如果您想在容器中进行开发，可以使用以下命令：
 
 ```bash
-# 啟動所有服務並查看日誌
+# 启动所有服务并查看日志
 docker-compose up
 
-# 只重新構建並啟動後端
+# 只重新构建并启动后端
 docker-compose up --build backend
 
-# 只重新構建並啟動前端
+# 只重新构建并启动前端
 docker-compose up --build frontend
 ```
 
-### 數據持久化
+### 数据持久化
 
-- 數據庫數據存儲在 Docker 卷 `mysql_data` 中
-- 上傳的文件存儲在 Docker 卷 `backend_uploads` 中
+- 数据库数据存储在 Docker 卷 `mysql_data` 中
+- 上传的文件存储在 Docker 卷 `backend_uploads` 中
 
-## 手動安裝
+## 手动安装
 
-如果您不想使用 Docker，也可以手動安裝：
+如果您不想使用 Docker，也可以手动安装：
 
-### 後端安裝
+### 后端安装
 
-1. 進入後端目錄：
+1. 进入后端目录：
 
 ```bash
 cd backend
 ```
 
-2. 安裝依賴：
+2. 安装依赖：
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. 配置環境變數：
+3. 配置环境变量：
 
 ```bash
-# 複製 .env.example 並修改
+# 复制 .env.example 并修改
 cp .env.example .env
 ```
 
-4. 啟動服務：
+4. 启动服务：
 
 ```bash
 uvicorn main:app --reload
 ```
 
-### 前端安裝
+### 前端安装
 
-1. 安裝 Flutter：
+1. 安装 Flutter：
 
 ```bash
-# 下載 Flutter SDK
+# 下载 Flutter SDK
 git clone https://github.com/flutter/flutter.git -b stable
 ```
 
-2. 添加 Flutter 到環境變數：
+2. 添加 Flutter 到环境变量：
 
 ```bash
 export PATH="$PATH:`pwd`/flutter/bin"
 ```
 
-3. 安裝依賴：
+3. 安装依赖：
 
 ```bash
 flutter pub get
 ```
 
-4. 運行應用：
+4. 运行应用：
 
 ```bash
 flutter run -d chrome
@@ -139,28 +139,28 @@ flutter run -d chrome
 
 ## 故障排除
 
-### 數據庫連接問題
+### 数据库连接问题
 
-如果遇到數據庫連接問題，請檢查：
+如果遇到数据库连接问题，请检查：
 
-1. 數據庫服務是否正常運行：
+1. 数据库服务是否正常运行：
 
 ```bash
 docker-compose ps
 ```
 
-2. 數據庫連接字符串是否正確：
+2. 数据库连接字符串是否正确：
 
 ```bash
 docker-compose logs backend
 ```
 
-### 前端無法連接後端
+### 前端无法连接后端
 
-檢查 CORS 設置和 API 基礎 URL 配置。
+检查 CORS 设置和 API 基础 URL 配置。
 
-## 安全注意事項
+## 安全注意事项
 
-- 生產環境中請更改默認密碼
-- 配置適當的 CORS 策略
-- 使用 HTTPS 保護 API 通信
+- 生产环境中请更改默认密码
+- 配置适当的 CORS 策略
+- 使用 HTTPS 保护 API 通信
