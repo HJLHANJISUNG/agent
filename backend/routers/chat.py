@@ -3,9 +3,9 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File, Form, Request, Header
 from sqlalchemy.orm import Session
 from typing import Dict, Optional, List
-from database import crud, schemas
-from database.database import SessionLocal
-from config import settings
+from backend.database import crud, schemas
+from backend.database.database import SessionLocal
+from backend.config import settings
 from openai import OpenAI
 import shutil
 from pathlib import Path
@@ -16,7 +16,7 @@ from pydantic import BaseModel
 import traceback
 import jwt
 from typing import Optional
-from routers.users import SECRET_KEY, ALGORITHM  # 導入 users.py 中的 JWT 設定
+from backend.routers.users import SECRET_KEY, ALGORITHM  # 導入 users.py 中的 JWT 設定
 
 router = APIRouter()
 

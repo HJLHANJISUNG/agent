@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-import crud
-import schemas
-from database.database import SessionLocal
+from backend import crud
+from backend import schemas
+from backend.database.database import SessionLocal
 from typing import Dict, List
 from sqlalchemy import func
-from database.base import Feedback, User, Solution
+from backend.database.base import Feedback, User, Solution
 
 router = APIRouter()
 

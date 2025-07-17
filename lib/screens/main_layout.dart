@@ -33,7 +33,11 @@ class MainLayoutState extends State<MainLayout> {
   }
 
   void switchPage(int index) {
-    // 看板頁面對所有人開放，管理員可以看到更多詳細資料
+    // 管理員不能訪問問答頁面（索引為1）
+    if (isAdmin && index == 1) {
+      return; // 不做任何切換
+    }
+
     setState(() {
       currentPageIndex = index;
     });
@@ -167,17 +171,32 @@ class MainLayoutState extends State<MainLayout> {
   }
 
   Widget _getCurrentPage() {
-    switch (currentPageIndex) {
-      case 0:
-        return HomePage(isAdmin: isAdmin);
-      case 1:
-        return const ChatPage();
-      case 2:
-        return const KnowledgePage();
-      case 3:
-        return DashboardPage(isAdmin: isAdmin);
-      default:
-        return HomePage(isAdmin: isAdmin);
+    if (isAdmin) {
+      // 管理員頁面索引：0=首頁，1=知識庫，2=看板
+      switch (currentPageIndex) {
+        case 0:
+          return HomePage(isAdmin: isAdmin);
+        case 1:
+          return const KnowledgePage();
+        case 2:
+          return DashboardPage(isAdmin: isAdmin);
+        default:
+          return HomePage(isAdmin: isAdmin);
+      }
+    } else {
+      // 普通用戶頁面索引：0=首頁，1=問答，2=知識庫，3=看板
+      switch (currentPageIndex) {
+        case 0:
+          return HomePage(isAdmin: isAdmin);
+        case 1:
+          return const ChatPage();
+        case 2:
+          return const KnowledgePage();
+        case 3:
+          return DashboardPage(isAdmin: isAdmin);
+        default:
+          return HomePage(isAdmin: isAdmin);
+      }
     }
   }
 }

@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:desktop_drop/desktop_drop.dart';
 import '../widgets/feedback_dialog.dart';
 import '../services/database_service.dart';
+import '../widgets/dashboard_page.dart';
 // import 'aurora_background.dart'; // 不再需要引入
 
 class ChatPage extends StatefulWidget {
@@ -265,6 +266,12 @@ class _ChatPageState extends State<ChatPage> {
       builder: (context) => FeedbackDialog(
         solutionId: message.solutionId!,
         onFeedbackSubmitted: () {
+          // 嘗試刷新 dashboard 數據
+          final dashboardState = context
+              .findAncestorStateOfType<DashboardPageState>();
+          if (dashboardState != null) {
+            dashboardState.loadStats();
+          }
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('感謝您的反饋！')));
@@ -428,7 +435,9 @@ class _ChatPageState extends State<ChatPage> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             width: double.infinity,
-            height: _isHotQuestionsExpanded ? null : 40,
+            constraints: _isHotQuestionsExpanded
+                ? const BoxConstraints()
+                : const BoxConstraints(minHeight: 40, maxHeight: 40),
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

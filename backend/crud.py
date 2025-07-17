@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-import models
-from database.base import User, Question, Solution, Feedback, Protocol, Knowledge
-import schemas
+from backend import models
+from backend.database.base import User, Question, Solution, Feedback, Protocol, Knowledge
+from backend import schemas
 import uuid
 from datetime import datetime
 

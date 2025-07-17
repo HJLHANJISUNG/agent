@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import crud
-from database.database import SessionLocal
-from database.base import User
-import schemas
+from backend.database import crud
+from backend.database.database import SessionLocal
+from backend.database.base import User
+from backend import schemas
 import uuid
 import bcrypt
 import logging

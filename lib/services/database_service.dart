@@ -112,33 +112,36 @@ class DatabaseService {
         FOREIGN KEY (conversation_id) REFERENCES Conversation(id)
       )
     ''');
+
+    // 新增 Feedback 表
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS Feedback(
+        feedback_id TEXT PRIMARY KEY,
+        user_id TEXT,
+        solution_id TEXT,
+        rating INTEGER,
+        comment TEXT,
+        created_at TEXT,
+        status TEXT
+      )
+    ''');
   }
 
   // 當升級數據庫時調用
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     print('Upgrading database from version $oldVersion to $newVersion');
 
-    if (oldVersion == 1 && newVersion == 2) {
-      // 從版本1升級到版本2：添加對話和消息表
+    if (oldVersion < 2 && newVersion >= 2) {
+      // 從舊版升級時補建 Feedback 表
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS Conversation(
-          id TEXT PRIMARY KEY,
-          user_id TEXT NOT NULL,
-          title TEXT NOT NULL,
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        )
-      ''');
-
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS Message(
-          id TEXT PRIMARY KEY,
-          conversation_id TEXT NOT NULL,
-          role TEXT NOT NULL,
-          content TEXT NOT NULL,
+        CREATE TABLE IF NOT EXISTS Feedback(
+          feedback_id TEXT PRIMARY KEY,
+          user_id TEXT,
           solution_id TEXT,
-          timestamp TEXT NOT NULL,
-          FOREIGN KEY (conversation_id) REFERENCES Conversation(id)
+          rating INTEGER,
+          comment TEXT,
+          created_at TEXT,
+          status TEXT
         )
       ''');
     }
@@ -371,11 +374,6 @@ class DatabaseService {
     await db.insert('User', user, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<Map<String, dynamic>>> getUsers() async {
-    final db = await database;
-    return await db.query('User');
-  }
-
   Future<void> updateUser(Map<String, dynamic> user) async {
     final db = await database;
     await db.update(
@@ -415,6 +413,9 @@ class DatabaseService {
 
     // 開始事務
     await db.transaction((txn) async {
+      // 從 conversation 中提取 messages 並移除，以便插入到 Conversation 表
+      final messagesJson = conversation.remove('messages');
+
       // 保存對話基本信息
       await txn.insert(
         'Conversation',
@@ -423,7 +424,9 @@ class DatabaseService {
       );
 
       // 獲取該對話的消息
-      final messages = conversation['messages'] as List<dynamic>;
+      final List<dynamic> messages = messagesJson is String
+          ? jsonDecode(messagesJson)
+          : [];
 
       // 先刪除該對話的舊消息
       await txn.delete(
@@ -465,7 +468,7 @@ class DatabaseService {
         orderBy: 'timestamp ASC',
       );
 
-      conversations[i] = {...conversation, 'messages': messages};
+      conversations[i] = {...conversation, 'messages': jsonEncode(messages)};
     }
 
     return conversations;
@@ -583,37 +586,70 @@ class DatabaseService {
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
-  // 活躍用戶數（最近7天有提問）
+  // 管理員統計：活躍用戶數（最近7天有註冊）
   Future<int> getActiveUserCount() async {
     final db = await database;
-    await db.execute('''CREATE TABLE IF NOT EXISTS Question(
-      question_id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      content TEXT NOT NULL,
-      image_url TEXT,
-      ask_time TEXT NOT NULL,
-      solved INTEGER DEFAULT 0,
-      FOREIGN KEY (user_id) REFERENCES User(user_id)
-    )''');
-    final since = DateTime.now().subtract(Duration(days: 7)).toIso8601String();
     final result = await db.rawQuery(
-      'SELECT COUNT(DISTINCT user_id) as cnt FROM Question WHERE ask_time > ?',
-      [since],
+      'SELECT COUNT(*) as cnt FROM User WHERE register_date > ?',
+      [DateTime.now().subtract(Duration(days: 7)).toIso8601String()],
     );
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
-  // 用戶列表（自動建表版本，移除重複定義）
-  // Future<List<Map<String, dynamic>>> getUsers({int limit = 100}) async {
-  //   final db = await database;
-  //   await db.execute('''CREATE TABLE IF NOT EXISTS User(
-  //     user_id TEXT PRIMARY KEY,
-  //     username TEXT NOT NULL,
-  //     email TEXT UNIQUE NOT NULL,
-  //     register_date TEXT NOT NULL
-  //   )''');
-  //   return await db.query('User', limit: limit, orderBy: 'register_date DESC');
-  // }
+  // 管理員統計：新用戶增長（最近7天註冊）
+  Future<int> getNewUserCount() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as cnt FROM User WHERE register_date > ?',
+      [DateTime.now().subtract(Duration(days: 7)).toIso8601String()],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  // 管理員統計：解決率
+  Future<double> getSolvedRate() async {
+    final db = await database;
+    final total = await db.rawQuery('SELECT COUNT(*) as cnt FROM Question');
+    final solved = await db.rawQuery(
+      'SELECT COUNT(*) as cnt FROM Question WHERE solved = 1',
+    );
+    final totalCount = Sqflite.firstIntValue(total) ?? 0;
+    final solvedCount = Sqflite.firstIntValue(solved) ?? 0;
+    if (totalCount == 0) return 0.0;
+    return solvedCount / totalCount;
+  }
+
+  // 管理員統計：平均回答時間（秒）
+  Future<double> getAverageAnswerTime() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT AVG(strftime(\'%s\', timestamp) - strftime(\'%s\', ask_time)) as avg_time FROM Message JOIN Question ON Message.question_id = Question.question_id WHERE Message.role = "assistant" AND Question.ask_time IS NOT NULL',
+    );
+    return result.first['avg_time'] != null
+        ? (result.first['avg_time'] as num).toDouble()
+        : 0.0;
+  }
+
+  // 管理員統計：知識庫最近更新
+  Future<String> getLastKnowledgeUpdate() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT MAX(update_time) as last_update FROM Knowledge',
+    );
+    return result.first['last_update']?.toString() ?? '';
+  }
+
+  // 用戶列表
+  Future<List<Map<String, dynamic>>> getUsers({int limit = 100}) async {
+    final db = await database;
+    await db.execute('''CREATE TABLE IF NOT EXISTS User(
+      user_id TEXT PRIMARY KEY,
+      username TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      register_date TEXT NOT NULL
+    )''');
+    return await db.query('User', limit: limit, orderBy: 'register_date DESC');
+  }
 
   // 主題分布
   Future<Map<String, int>> getProtocolDistribution() async {

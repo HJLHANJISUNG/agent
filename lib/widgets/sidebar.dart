@@ -147,9 +147,15 @@ class Sidebar extends StatelessWidget {
           const SizedBox(height: 32),
           // 導航按鈕
           _buildNavItem('首页', Icons.home, 0, context),
-          _buildNavItem('问答', Icons.chat, 1, context),
-          _buildNavItem('知识库', Icons.library_books, 2, context),
-          _buildNavItem('看板', Icons.dashboard, 3, context), // 所有用戶都能看到看板
+          // 如果不是管理員，才顯示問答按鈕
+          if (!isAdmin) _buildNavItem('问答', Icons.chat, 1, context),
+          _buildNavItem('知识库', Icons.library_books, isAdmin ? 1 : 2, context),
+          _buildNavItem(
+            '看板',
+            Icons.dashboard,
+            isAdmin ? 2 : 3,
+            context,
+          ), // 所有用戶都能看到看板
           const Spacer(),
 
           // 收合按鈕

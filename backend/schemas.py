@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional, List
 
@@ -7,16 +7,11 @@ class UserBase(BaseModel):
     username: str
     email: str
 
-class UserCreate(BaseModel):
-    user_id: str
-    username: str
-    email: str
-    hashed_password: str
+class UserCreate(UserBase):
+    password: str
 
-class User(BaseModel):
+class User(UserBase):
     user_id: str
-    username: str
-    email: str
     register_date: datetime
 
     class Config:
@@ -55,25 +50,6 @@ class Solution(SolutionBase):
     class Config:
         from_attributes = True
 
-# Feedback schemas
-class FeedbackBase(BaseModel):
-    rating: int
-    comment: Optional[str] = None
-    status: Optional[str] = "待處理"
-
-class FeedbackCreate(FeedbackBase):
-    user_id: str
-    solution_id: str
-
-class Feedback(FeedbackBase):
-    feedback_id: str
-    user_id: str
-    solution_id: str
-    created_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-
 # Protocol schemas
 class ProtocolBase(BaseModel):
     name: str
@@ -84,7 +60,7 @@ class ProtocolCreate(ProtocolBase):
 
 class Protocol(ProtocolBase):
     protocol_id: str
-
+    
     class Config:
         from_attributes = True
 
@@ -92,14 +68,31 @@ class Protocol(ProtocolBase):
 class KnowledgeBase(BaseModel):
     content: str
     source: Optional[str] = None
+    protocol_id: Optional[str] = None
 
 class KnowledgeCreate(KnowledgeBase):
-    protocol_id: str
+    pass
 
 class Knowledge(KnowledgeBase):
     knowledge_id: str
-    protocol_id: str
     update_time: datetime
+    
+    class Config:
+        from_attributes = True
+
+# Feedback schemas
+class FeedbackBase(BaseModel):
+    rating: int
+    comment: Optional[str] = None
+
+class FeedbackCreate(FeedbackBase):
+    user_id: str
+    solution_id: str
+
+class Feedback(FeedbackBase):
+    feedback_id: str
+    user_id: str
+    solution_id: str
 
     class Config:
         from_attributes = True 

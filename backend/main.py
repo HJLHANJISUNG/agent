@@ -6,13 +6,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # 使用正確的導入路徑
-from database.base import Base
-from database.database import engine
-from routers import users, chat, feedbacks, protocols, knowledge
+from backend.database.base import Base
+from backend.database.database import engine
+from backend.routers import users, chat, feedbacks, protocols, knowledge
 
 # Create all database tables
-# 修改為 drop_all 然後 create_all 以確保表結構更新
-Base.metadata.drop_all(bind=engine)
+# 只創建不存在的表，不刪除現有表
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()

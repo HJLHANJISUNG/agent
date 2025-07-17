@@ -85,7 +85,7 @@ class ConversationService extends ChangeNotifier {
       // 保存到數據庫
       await _databaseService.saveConversation(_userId!, {
         ...conversationMap,
-        'messages': messagesMapList,
+        'messages': jsonEncode(messagesMapList),
       });
 
       print('成功保存對話到數據庫: ${currentConversation!.id}');
@@ -112,7 +112,7 @@ class ConversationService extends ChangeNotifier {
         // 保存到數據庫
         await _databaseService.saveConversation(_userId!, {
           ...conversationMap,
-          'messages': messagesMapList,
+          'messages': jsonEncode(messagesMapList),
         });
       }
 

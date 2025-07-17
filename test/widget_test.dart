@@ -12,7 +12,7 @@ import 'package:app/main.dart';
 
 void main() {
   testWidgets('主頁能正常渲染', (WidgetTester tester) async {
-    await tester.pumpWidget(const IPExpertApp());
+    await tester.pumpWidget(const MyApp());
     // 檢查主頁標題是否存在
     expect(find.text('IP智慧解答專家'), findsOneWidget);
   });
