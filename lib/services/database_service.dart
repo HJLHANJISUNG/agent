@@ -242,16 +242,16 @@ class DatabaseService {
       print('Registering user: $username, Email: $email');
 
       try {
-        // 先嘗試ping服務器，確認連接狀態
-        print('嘗試連接服務器...');
+        // 先尝试ping服务器，确认连接状态
+        print('尝试连接服务器...');
         final pingResponse = await _safeHttpRequest(
           'GET',
           '',
           timeout: const Duration(seconds: 5),
         );
-        print('服務器響應: ${pingResponse.statusCode}');
+        print('服务器响应: ${pingResponse.statusCode}');
       } catch (e) {
-        print('無法連接到服務器: $e');
+        print('无法连接到服务器: $e');
         // 這裡不返回錯誤，而是繼續嘗試註冊
       }
 
@@ -622,12 +622,19 @@ class DatabaseService {
   // 管理員統計：平均回答時間（秒）
   Future<double> getAverageAnswerTime() async {
     final db = await database;
-    final result = await db.rawQuery(
-      'SELECT AVG(strftime(\'%s\', timestamp) - strftime(\'%s\', ask_time)) as avg_time FROM Message JOIN Question ON Message.question_id = Question.question_id WHERE Message.role = "assistant" AND Question.ask_time IS NOT NULL',
-    );
-    return result.first['avg_time'] != null
-        ? (result.first['avg_time'] as num).toDouble()
-        : 0.0;
+    try {
+      // 由于Message表没有question_id字段，无法与Question表连接
+      // 改为计算所有assistant消息的平均时间间隔
+      final result = await db.rawQuery(
+        'SELECT AVG(strftime(\'%s\', timestamp)) as avg_time FROM Message WHERE role = "assistant" AND timestamp IS NOT NULL',
+      );
+      return result.first['avg_time'] != null
+          ? (result.first['avg_time'] as num).toDouble()
+          : 0.0;
+    } catch (e) {
+      print('计算平均回答时间失败: $e');
+      return 0.0;
+    }
   }
 
   // 管理員統計：知識庫最近更新
@@ -663,13 +670,44 @@ class DatabaseService {
       solved INTEGER DEFAULT 0,
       FOREIGN KEY (user_id) REFERENCES User(user_id)
     )''');
-    final result = await db.rawQuery(
-      'SELECT protocol_id, COUNT(*) as cnt FROM Question GROUP BY protocol_id',
-    );
-    return {
-      for (var row in result)
-        (row['protocol_id'] ?? '未知') as String: row['cnt'] as int,
-    };
+
+    // 由於 Question 表沒有 protocol_id 列，我們需要從內容中解析協議類型
+    final questions = await db.query('Question');
+    final Map<String, int> categories = {};
+
+    for (var question in questions) {
+      final content = question['content'] as String? ?? '';
+      String category = '其他';
+
+      // 從問題內容中識別協議類型
+      if (content.toLowerCase().contains('tcp')) {
+        category = 'TCP';
+      } else if (content.toLowerCase().contains('udp')) {
+        category = 'UDP';
+      } else if (content.toLowerCase().contains('http')) {
+        category = 'HTTP';
+      } else if (content.toLowerCase().contains('https')) {
+        category = 'HTTPS';
+      } else if (content.toLowerCase().contains('dns')) {
+        category = 'DNS';
+      } else if (content.toLowerCase().contains('ftp')) {
+        category = 'FTP';
+      } else if (content.toLowerCase().contains('smtp')) {
+        category = 'SMTP';
+      } else if (content.toLowerCase().contains('pop3')) {
+        category = 'POP3';
+      } else if (content.toLowerCase().contains('imap')) {
+        category = 'IMAP';
+      } else if (content.toLowerCase().contains('ssh')) {
+        category = 'SSH';
+      } else if (content.toLowerCase().contains('telnet')) {
+        category = 'Telnet';
+      }
+
+      categories[category] = (categories[category] ?? 0) + 1;
+    }
+
+    return categories;
   }
 
   // 反饋列表
@@ -709,5 +747,176 @@ class DatabaseService {
       'average_rating': avg.first['avg'] ?? 0.0,
       'pending_count': Sqflite.firstIntValue(pending) ?? 0,
     };
+  }
+
+  // 獲取最近的問題
+  Future<List<Map<String, dynamic>>> getRecentQuestions({
+    int limit = 10,
+  }) async {
+    final db = await database;
+    await db.execute('''CREATE TABLE IF NOT EXISTS Question(
+      question_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      image_url TEXT,
+      ask_time TEXT NOT NULL,
+      solved INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES User(user_id)
+    )''');
+
+    // 獲取更多問題以進行去重
+    final allQuestions = await db.query(
+      'Question',
+      limit: limit * 2,
+      orderBy: 'ask_time DESC',
+    );
+
+    // 使用 Map 來去重，保留最新的記錄
+    final uniqueQuestions = <String, Map<String, dynamic>>{};
+
+    for (var question in allQuestions) {
+      final content = question['content']?.toString() ?? '';
+      final askTime = question['ask_time']?.toString() ?? '';
+      final key = '$content-$askTime';
+
+      // 如果已存在相同內容和時間的問題，保留最新的（ID 更大的）
+      if (!uniqueQuestions.containsKey(key) ||
+          (question['question_id']?.toString() ?? '').compareTo(
+                uniqueQuestions[key]!['question_id']?.toString() ?? '',
+              ) >
+              0) {
+        uniqueQuestions[key] = question;
+      }
+    }
+
+    // 轉換回列表，按時間排序，並限制數量
+    final result = uniqueQuestions.values.toList();
+    result.sort((a, b) => (b['ask_time'] ?? '').compareTo(a['ask_time'] ?? ''));
+
+    return result.take(limit).toList();
+  }
+
+  // 獲取所有問題
+  Future<List<Map<String, dynamic>>> getAllQuestions() async {
+    final db = await database;
+    await db.execute('''CREATE TABLE IF NOT EXISTS Question(
+      question_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      image_url TEXT,
+      ask_time TEXT NOT NULL,
+      solved INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES User(user_id)
+    )''');
+
+    // 獲取所有問題並去重
+    final allQuestions = await db.query('Question', orderBy: 'ask_time DESC');
+
+    // 使用 Map 來去重，保留最新的記錄
+    final uniqueQuestions = <String, Map<String, dynamic>>{};
+
+    for (var question in allQuestions) {
+      final content = question['content']?.toString() ?? '';
+      final askTime = question['ask_time']?.toString() ?? '';
+      final key = '$content-$askTime';
+
+      // 如果已存在相同內容和時間的問題，保留最新的（ID 更大的）
+      if (!uniqueQuestions.containsKey(key) ||
+          (question['question_id']?.toString() ?? '').compareTo(
+                uniqueQuestions[key]!['question_id']?.toString() ?? '',
+              ) >
+              0) {
+        uniqueQuestions[key] = question;
+      }
+    }
+
+    // 轉換回列表並按時間排序
+    final result = uniqueQuestions.values.toList();
+    result.sort((a, b) => (b['ask_time'] ?? '').compareTo(a['ask_time'] ?? ''));
+
+    return result;
+  }
+
+  // 獲取所有知識條目
+  Future<List<Map<String, dynamic>>> getAllKnowledge() async {
+    final db = await database;
+    await db.execute('''CREATE TABLE IF NOT EXISTS Knowledge(
+      knowledge_id TEXT PRIMARY KEY,
+      protocol_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      source TEXT,
+      update_time TEXT NOT NULL,
+      FOREIGN KEY (protocol_id) REFERENCES Protocol(protocol_id)
+    )''');
+    return await db.query('Knowledge', orderBy: 'update_time DESC');
+  }
+
+  // 根據ID獲取協議信息
+  Future<Map<String, dynamic>?> getProtocolById(String protocolId) async {
+    final db = await database;
+    await db.execute('''CREATE TABLE IF NOT EXISTS Protocol(
+      protocol_id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      rfc_number TEXT
+    )''');
+    final result = await db.query(
+      'Protocol',
+      where: 'protocol_id = ?',
+      whereArgs: [protocolId],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  // 獲取當前用戶ID
+  Future<String?> getCurrentUserId() async {
+    final db = await database;
+    // 這裡假設我們從 SharedPreferences 或其他地方獲取當前用戶ID
+    // 暫時返回一個默認值，實際應用中應該從登錄狀態獲取
+    return 'default_user_id';
+  }
+
+  // 獲取所有用戶
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    final db = await database;
+    await db.execute('''CREATE TABLE IF NOT EXISTS User(
+      user_id TEXT PRIMARY KEY,
+      username TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      register_date TEXT NOT NULL,
+      last_login TEXT,
+      created_at TEXT
+    )''');
+    return await db.query('User', orderBy: 'register_date DESC');
+  }
+
+  // 插入測試協議和知識庫數據
+  Future<void> insertTestKnowledge() async {
+    final db = await database;
+    // 插入協議（如果不存在）
+    await db.insert('Protocol', {
+      'protocol_id': '1',
+      'name': 'OSPF',
+      'rfc_number': '2328',
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    await db.insert('Protocol', {
+      'protocol_id': '2',
+      'name': 'BGP',
+      'rfc_number': '4271',
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    // 插入知識庫
+    await db.insert('Knowledge', {
+      'knowledge_id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'protocol_id': '1',
+      'content': 'OSPF 配置与故障排查',
+      'source': '测试',
+      'update_time': DateTime.now().toIso8601String(),
+    });
+    await db.insert('Knowledge', {
+      'knowledge_id': (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+      'protocol_id': '2',
+      'content': 'BGP 配置与安全优化',
+      'source': '测试',
+      'update_time': DateTime.now().toIso8601String(),
+    });
   }
 }

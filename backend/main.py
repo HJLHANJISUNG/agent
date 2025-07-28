@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # 使用正確的導入路徑
 from backend.database.base import Base
 from backend.database.database import engine
-from backend.routers import users, chat, feedbacks, protocols, knowledge
+from backend.database.routers import users, chat, feedbacks, protocols, knowledge
 
 # Create all database tables
 # 只創建不存在的表，不刪除現有表

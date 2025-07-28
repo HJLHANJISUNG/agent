@@ -156,7 +156,7 @@ class _AuthPageState extends State<AuthPage> {
                           child: _isLogin
                               ? _LoginForm(
                                   key: const ValueKey('login'),
-                                  usernameController: _usernameController,
+                                  emailController: _emailController,
                                   passwordController: _passwordController,
                                   isLoading: _isLoading,
                                   onLogin: _handleLogin,
@@ -266,11 +266,11 @@ class _AuthPageState extends State<AuthPage> {
 
   // 新增：处理登录逻辑
   void _handleLogin() async {
-    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty)
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty)
       return;
     setState(() => _isLoading = true);
 
-    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     // 取得 ConversationService 實例
@@ -279,46 +279,37 @@ class _AuthPageState extends State<AuthPage> {
       listen: false,
     );
 
-    // 檢查是否是管理員帳號
-    if (_adminAccounts.containsKey(username) &&
-        _adminAccounts[username] == password) {
-      // 管理員不需要 token，直接登入
-      widget.onAuthChanged(true, username, null);
+    // 管理員帳號特殊处理
+    if (_adminAccounts.containsKey(email) &&
+        _adminAccounts[email] == password) {
+      widget.onAuthChanged(true, email, null);
       setState(() => _isLoading = false);
       return;
     }
 
     // 使用 DatabaseService 登入
     try {
-      // 注意：管理員帳號使用用戶名登入，普通用戶使用電子郵件登入
-      // 這裡我們假設用戶名就是電子郵件
-      final result = await _databaseService.loginUser(username, password);
+      final result = await _databaseService.loginUser(email, password);
 
       if (result['success']) {
-        // 從登入結果中獲取 token 和 user_id
         final tokenData = result['token'];
         final accessToken = tokenData['access_token'];
         final userId = tokenData['user_id'];
         final userName = tokenData['username'];
-
-        // 保存 token 和 user_id 到 ConversationService
         await conversationService.setAuthInfo(accessToken, userId);
-
-        // 通知應用程序用戶已登入
-        widget.onAuthChanged(true, userName, username);
-
+        widget.onAuthChanged(true, userName, email);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('登入成功！')));
       } else {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('登入失敗：${result['error']}')));
+        ).showSnackBar(SnackBar(content: Text('登入失败：${result['error']}')));
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('發生錯誤：$e')));
+      ).showSnackBar(SnackBar(content: Text('发生错误：$e')));
     }
 
     setState(() => _isLoading = false);
@@ -362,9 +353,9 @@ class _AuthPageState extends State<AuthPage> {
       if (result['success']) {
         print('注册成功，准备切换状态');
 
-        // 註冊成功後自動登入
+        // 註冊成功後自動登入，始终用用户名
         final loginResult = await _databaseService.loginUser(
-          _emailController.text.trim(),
+          _usernameController.text.trim(),
           _passwordController.text,
         );
 
@@ -400,12 +391,12 @@ class _AuthPageState extends State<AuthPage> {
 
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('註冊成功！')));
+        ).showSnackBar(const SnackBar(content: Text('注册成功！')));
       } else {
         print('注册失败: ${result['error']}');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('註冊失敗：${result['error']}')));
+        ).showSnackBar(SnackBar(content: Text('注册冊失敗：${result['error']}')));
         // 注册失败时重置加载状态
         setState(() => _isLoading = false);
       }
@@ -413,7 +404,7 @@ class _AuthPageState extends State<AuthPage> {
       print('注册过程发生错误: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('發生錯誤：$e')));
+      ).showSnackBar(SnackBar(content: Text('发生错误：$e')));
       // 发生错误时重置加载状态
       setState(() => _isLoading = false);
     }
@@ -422,14 +413,14 @@ class _AuthPageState extends State<AuthPage> {
 
 // 新增登录表单组件
 class _LoginForm extends StatelessWidget {
-  final TextEditingController usernameController;
+  final TextEditingController emailController;
   final TextEditingController passwordController;
   final bool isLoading;
   final VoidCallback onLogin;
   final VoidCallback onSwitch;
   const _LoginForm({
     Key? key,
-    required this.usernameController,
+    required this.emailController,
     required this.passwordController,
     required this.isLoading,
     required this.onLogin,
@@ -440,11 +431,11 @@ class _LoginForm extends StatelessWidget {
     return Column(
       children: [
         TextField(
-          controller: usernameController,
+          controller: emailController,
           decoration: InputDecoration(
-            hintText: '用户名',
+            hintText: '电子邮箱',
             prefixIcon: const Icon(
-              Icons.person_outline,
+              Icons.email_outlined,
               color: Color(0xFFE60012),
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -508,12 +499,6 @@ class _LoginForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const Center(
-          child: Text(
-            '提示: 使用 "admin" / "admin123" 可进入管理员模式。',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
       ],
     );
   }

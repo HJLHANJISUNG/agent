@@ -4,6 +4,7 @@ import '../services/conversation_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database_service.dart'; // Added import for DatabaseService
+import 'dashboard_page.dart';
 
 class FeedbackDialog extends StatefulWidget {
   final String solutionId;
@@ -53,7 +54,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
   Future<void> _submitFeedback() async {
     if (_rating == 0) {
       setState(() {
-        _errorMessage = '請選擇評分';
+        _errorMessage = '请选择评分';
       });
       return;
     }
@@ -70,51 +71,76 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
       );
       final userId = _userId ?? conversationService.userId ?? 'anonymous';
 
-      final result = await _feedbackService.submitFeedback(
-        userId: userId,
-        solutionId: widget.solutionId,
-        rating: _rating,
-        comment: _commentController.text.trim(),
-      );
+      // 首先嘗試通過 API 提交
+      try {
+        final result = await _feedbackService.submitFeedback(
+          userId: userId,
+          solutionId: widget.solutionId,
+          rating: _rating,
+          comment: _commentController.text.trim(),
+        );
 
-      if (result['success'] == true) {
-        if (mounted) {
-          Navigator.of(context).pop(true);
-          if (widget.onFeedbackSubmitted != null) {
-            widget.onFeedbackSubmitted!();
+        if (result['success'] == true) {
+          // API 成功後也寫入本地
+          final feedbackId = DateTime.now().millisecondsSinceEpoch.toString();
+          await DatabaseService().addFeedback({
+            'feedback_id': feedbackId,
+            'user_id': userId,
+            'solution_id': widget.solutionId,
+            'rating': _rating,
+            'comment': _commentController.text.trim(),
+            'created_at': DateTime.now().toIso8601String(),
+            'status': 'synced', // 標記已同步
+          });
+          if (mounted) {
+            Navigator.of(context).pop(true);
+            if (widget.onFeedbackSubmitted != null) {
+              widget.onFeedbackSubmitted!();
+            }
+            DashboardPageState.forceRefresh();
+            // 調試：打印所有反饋
+            final allFeedbacks = await DatabaseService().getFeedbacks();
+            print(
+              '【调试】所有反馈：\n' + allFeedbacks.map((f) => f.toString()).join('\n'),
+            );
           }
+          return;
         }
-      } else {
-        setState(() {
-          _errorMessage = '提交失敗，請稍後再試';
-          _isSubmitting = false;
-        });
+      } catch (apiError) {
+        print('API submission failed: $apiError');
+        // 如果 API 失敗，嘗試本地保存
+      }
+
+      // 如果 API 失敗，保存到本地數據庫
+      final feedbackId = DateTime.now().millisecondsSinceEpoch.toString();
+      await DatabaseService().addFeedback({
+        'feedback_id': feedbackId,
+        'user_id': userId,
+        'solution_id': widget.solutionId,
+        'rating': _rating,
+        'comment': _commentController.text.trim(),
+        'created_at': DateTime.now().toIso8601String(),
+        'status': 'pending',
+      });
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        if (widget.onFeedbackSubmitted != null) {
+          widget.onFeedbackSubmitted!();
+        }
+        // 直接通知看板刷新
+        DashboardPageState.forceRefresh();
+        // 調試：打印所有反饋
+        final allFeedbacks = await DatabaseService().getFeedbacks();
+        print('【调试】所有反馈：\n' + allFeedbacks.map((f) => f.toString()).join('\n'));
       }
     } catch (e) {
+      print('Feedback submission error: $e');
       setState(() {
-        _errorMessage = '發生錯誤: $e';
+        _errorMessage = '提交失败，请稍后再试';
         _isSubmitting = false;
       });
     }
-  }
-
-  // 假設有一個方法 _handleSubmitFeedback(int rating, String comment, String solutionId, String userId) 處理反饋
-  Future<void> _handleSubmitFeedback(
-    int rating,
-    String comment,
-    String solutionId,
-    String userId,
-  ) async {
-    final feedbackId = DateTime.now().millisecondsSinceEpoch.toString();
-    await DatabaseService().addFeedback({
-      'feedback_id': feedbackId,
-      'user_id': userId,
-      'solution_id': solutionId,
-      'rating': rating,
-      'comment': comment,
-      'created_at': DateTime.now().toIso8601String(),
-    });
-    // 其他 UI 處理...
   }
 
   @override
@@ -151,7 +177,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
                 ),
                 const SizedBox(width: 12),
                 const Text(
-                  '您的反饋很重要',
+                  '您的反馈很重要',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -172,7 +198,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
 
             // 評分
             const Text(
-              '請為解答評分',
+              '请评分',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -202,7 +228,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
 
             // 評論
             const Text(
-              '您的評論（可選）',
+              '您的评价',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -214,7 +240,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
               controller: _commentController,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: '請分享您的使用體驗...',
+                hintText: '请分享您的使用体验',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
@@ -283,7 +309,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('提交反饋'),
+                    : const Text('提交反馈'),
               ),
             ),
           ],

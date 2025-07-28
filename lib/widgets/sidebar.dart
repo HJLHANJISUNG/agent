@@ -52,118 +52,136 @@ class Sidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 32),
-          // LOGO + 標題
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: open ? 24 : 0),
-            child: Row(
-              mainAxisAlignment: open
-                  ? MainAxisAlignment.start
-                  : MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE60012),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'H',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                if (open) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'IP智慧解答专家',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      overflow: TextOverflow.fade,
-                      softWrap: false,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (open) ...[
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
+          // 用 Expanded + SingleChildScrollView 包裹内容部分
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.person, color: Colors.white, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '欢迎 · $userName',
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (isAdmin)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        '管理员',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(height: 20), // 进一步减少顶部间距
+                  // LOGO + 標題
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: open ? 24 : 0),
+                    child: Row(
+                      mainAxisAlignment: open
+                          ? MainAxisAlignment.start
+                          : MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36, // 减少LOGO大小
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE60012),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'H',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18, // 减少字体大小
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ),
+                        if (open) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'IP智慧解答专家',
+                              style: TextStyle(
+                                fontSize: 18, // 减少字体大小
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.fade,
+                              softWrap: false,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (open) ...[
+                    const SizedBox(height: 12), // 减少间距
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 14, // 减少图标大小
+                          ),
+                          const SizedBox(width: 6), // 减少间距
+                          Expanded(
+                            child: Text(
+                              '欢迎 · $userName',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12, // 减少字体大小
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isAdmin)
+                            Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                '管理员',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10, // 减少字体大小
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          TextButton(
+                            onPressed: onLogout,
+                            child: const Text(
+                              '登出',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12, // 减少字体大小
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ), // 减少按钮内边距
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  TextButton(
-                    onPressed: onLogout, // 呼叫登出函式
-                    child: const Text(
-                      '登出',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                    style: TextButton.styleFrom(foregroundColor: Colors.white),
-                  ),
+                  ],
+                  const SizedBox(height: 16), // 减少间距
+                  // 導航按鈕 - 使用更紧凑的布局
+                  _buildNavItem('首页', Icons.home, 0, context),
+                  _buildNavItem('问答', Icons.chat, 1, context),
+                  _buildNavItem('知识库', Icons.library_books, 2, context),
+                  _buildNavItem('看板', Icons.dashboard, 3, context),
                 ],
               ),
             ),
-          ],
-          const SizedBox(height: 32),
-          // 導航按鈕
-          _buildNavItem('首页', Icons.home, 0, context),
-          // 如果不是管理員，才顯示問答按鈕
-          if (!isAdmin) _buildNavItem('问答', Icons.chat, 1, context),
-          _buildNavItem('知识库', Icons.library_books, isAdmin ? 1 : 2, context),
-          _buildNavItem(
-            '看板',
-            Icons.dashboard,
-            isAdmin ? 2 : 3,
-            context,
-          ), // 所有用戶都能看到看板
-          const Spacer(),
-
+          ),
           // 收合按鈕
           const Divider(color: Colors.white30, indent: 16, endIndent: 16),
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: open ? 12 : 0,
-              vertical: 8,
+              vertical: 2, // 进一步减少垂直间距
             ),
             child: Material(
               color: Colors.transparent,
@@ -171,7 +189,7 @@ class Sidebar extends StatelessWidget {
                 onTap: onCollapse,
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  height: 48,
+                  height: 36, // 进一步减少高度
                   padding: EdgeInsets.symmetric(horizontal: open ? 12 : 0),
                   child: Row(
                     mainAxisAlignment: open
@@ -181,14 +199,17 @@ class Sidebar extends StatelessWidget {
                       Icon(
                         open ? Icons.chevron_left : Icons.chevron_right,
                         color: Colors.white,
-                        size: 24,
+                        size: 18, // 减少图标大小
                       ),
                       if (open) ...[
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12), // 减少间距
                         const Expanded(
                           child: Text(
                             '收合侧栏',
-                            style: TextStyle(color: Colors.white, fontSize: 16),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ), // 减少字体大小
                           ),
                         ),
                       ],
@@ -198,7 +219,7 @@ class Sidebar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8), // 减少底部间距
         ],
       ),
     );
@@ -212,7 +233,10 @@ class Sidebar extends StatelessWidget {
   ) {
     final bool isSelected = currentPageIndex == index;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: open ? 12 : 0, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: open ? 12 : 0,
+        vertical: 1,
+      ), // 进一步减少垂直间距
       child: Material(
         color: isSelected ? Colors.white.withOpacity(0.15) : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
@@ -220,16 +244,16 @@ class Sidebar extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: () => onPageChange(index),
           child: Container(
-            height: 48,
+            height: 36, // 进一步减少高度
             padding: EdgeInsets.symmetric(horizontal: open ? 12 : 0),
             child: Row(
               mainAxisAlignment: open
                   ? MainAxisAlignment.start
                   : MainAxisAlignment.center,
               children: [
-                Icon(icon, color: Colors.white, size: 24),
+                Icon(icon, color: Colors.white, size: 18), // 减少图标大小
                 if (open) ...[
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12), // 减少间距
                   Expanded(
                     child: Text(
                       title,
@@ -238,7 +262,7 @@ class Sidebar extends StatelessWidget {
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        fontSize: 16,
+                        fontSize: 13, // 减少字体大小
                       ),
                     ),
                   ),

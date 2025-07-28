@@ -65,11 +65,11 @@ class _ChatPageState extends State<ChatPage> {
       // 使用默認問題
       setState(() {
         _hotQuestionData = [
-          {"id": "1", "question": "如何配置 OSPF 協議？", "count": 156},
-          {"id": "2", "question": "BGP 路由通告失敗的常見原因", "count": 142},
-          {"id": "3", "question": "VLAN 間通信問題排查步驟", "count": 128},
-          {"id": "4", "question": "ACL 規則配置最佳實踐", "count": 115},
-          {"id": "5", "question": "STP 根橋選舉機制說明", "count": 98},
+          {"id": "1", "question": "如何配置 OSPF 协议？", "count": 156},
+          {"id": "2", "question": "BGP 路由通告失敗的常见问题", "count": 142},
+          {"id": "3", "question": "VLAN 间通信问题排查步骤", "count": 128},
+          {"id": "4", "question": "ACL 规则配置最佳实践", "count": 115},
+          {"id": "5", "question": "STP 根桥选举机制说明", "count": 98},
         ];
       });
     }
@@ -266,15 +266,13 @@ class _ChatPageState extends State<ChatPage> {
       builder: (context) => FeedbackDialog(
         solutionId: message.solutionId!,
         onFeedbackSubmitted: () {
-          // 嘗試刷新 dashboard 數據
-          final dashboardState = context
-              .findAncestorStateOfType<DashboardPageState>();
-          if (dashboardState != null) {
-            dashboardState.loadStats();
-          }
+          // 使用静态方法通知看板刷新
+          DashboardPageState.refreshDashboard();
+          // 強制刷新看板
+          DashboardPageState.forceRefresh();
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('感謝您的反饋！')));
+          ).showSnackBar(const SnackBar(content: Text('感谢您的反馈！')));
         },
       ),
     );
@@ -362,6 +360,7 @@ class _ChatPageState extends State<ChatPage> {
           ],
           Flexible(
             child: Container(
+              constraints: const BoxConstraints(maxWidth: 600), // 限制最大宽度
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isUser ? const Color(0xFFE60012) : Colors.grey.shade100,
@@ -369,13 +368,23 @@ class _ChatPageState extends State<ChatPage> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min, // 确保Column不会占用过多空间
                 children: [
-                  SelectableText(
-                    message.content,
-                    style: TextStyle(
-                      color: isUser ? Colors.white : Colors.black,
+                  if (!isUser)
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: _buildEnhancedContent(message.content),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: SelectableText(
+                        message.content,
+                        style: TextStyle(
+                          color: isUser ? Colors.white : Colors.black,
+                        ),
+                      ),
                     ),
-                  ),
                   if (!isUser && message.solutionId != null) ...[
                     const SizedBox(height: 8),
                     _buildFeedbackButtons(message),
@@ -391,6 +400,272 @@ class _ChatPageState extends State<ChatPage> {
               child: const Icon(Icons.person, color: Colors.grey),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedContent(String content) {
+    // 检测是否包含代码块
+    final codeBlockPattern = RegExp(r'```(\w+)?\n([\s\S]*?)```');
+    final matches = codeBlockPattern.allMatches(content);
+
+    if (matches.isEmpty) {
+      // 没有代码块，正常显示
+      return _buildFormattedText(content);
+    }
+
+    // 有代码块，分段显示
+    List<Widget> widgets = [];
+    int lastEnd = 0;
+
+    for (final match in matches) {
+      // 添加代码块前的文本
+      if (match.start > lastEnd) {
+        final beforeText = content.substring(lastEnd, match.start);
+        if (beforeText.isNotEmpty) {
+          widgets.add(_buildFormattedText(beforeText));
+        }
+      }
+
+      // 添加代码块
+      final language = match.group(1) ?? '';
+      final code = match.group(2) ?? '';
+      widgets.add(_buildCodeBlock(code, language));
+
+      lastEnd = match.end;
+    }
+
+    // 添加代码块后的文本
+    if (lastEnd < content.length) {
+      final afterText = content.substring(lastEnd);
+      if (afterText.isNotEmpty) {
+        widgets.add(_buildFormattedText(afterText));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
+  Widget _buildFormattedText(String text) {
+    // 处理Markdown格式
+    final List<Widget> widgets = [];
+    final List<String> parts = [];
+
+    // 分割文本，保留分隔符
+    final pattern = RegExp(
+      r'(#{1,6}\s+.*?(?=\n|$)|(\*\*.*?\*\*)|(`.*?`)|(\*\*.*?\*\*))',
+      dotAll: true,
+    );
+    int lastIndex = 0;
+
+    for (final match in pattern.allMatches(text)) {
+      // 添加匹配前的普通文本
+      if (match.start > lastIndex) {
+        parts.add(text.substring(lastIndex, match.start));
+      }
+      // 添加匹配的格式文本
+      parts.add(match.group(0)!);
+      lastIndex = match.end;
+    }
+
+    // 添加剩余的普通文本
+    if (lastIndex < text.length) {
+      parts.add(text.substring(lastIndex));
+    }
+
+    // 处理每个部分
+    for (final part in parts) {
+      if (part.isEmpty) continue;
+
+      if (part.startsWith('#')) {
+        // 标题格式
+        final level = part.split(' ')[0].length;
+        final spaceIndex = part.indexOf(' ');
+        if (spaceIndex > 0 && spaceIndex < part.length - 1) {
+          final title = part.substring(spaceIndex + 1);
+          widgets.add(
+            Padding(
+              padding: EdgeInsets.only(
+                top: level == 1 ? 16 : 8,
+                bottom: level == 1 ? 8 : 4,
+              ),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: level == 1 ? 24 : (level == 2 ? 20 : 18),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          );
+        } else {
+          // 如果没有空格或格式不正确，按普通文本处理
+          widgets.add(
+            SelectableText(part, style: const TextStyle(color: Colors.black)),
+          );
+        }
+      } else if (part.startsWith('**') &&
+          part.endsWith('**') &&
+          part.length > 4) {
+        // 粗体格式
+        final boldText = part.substring(2, part.length - 2);
+        widgets.add(
+          Text(
+            boldText,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        );
+      } else if (part.startsWith('`') &&
+          part.endsWith('`') &&
+          part.length > 2) {
+        // 行内代码格式
+        final codeText = part.substring(1, part.length - 1);
+        widgets.add(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              codeText,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        );
+      } else {
+        // 普通文本
+        widgets.add(
+          SelectableText(part, style: const TextStyle(color: Colors.black)),
+        );
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
+  Widget _buildCodeBlock(String code, String language) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50, // 改为浅色背景
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 代码块头部
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200, // 浅色头部
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const Spacer(),
+                if (language.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      language.toUpperCase(),
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 16),
+                  color: Colors.grey.shade600,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    // 复制代码到剪贴板
+                    // 这里需要添加剪贴板功能
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('代码已复制到剪贴板'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  tooltip: '复制代码',
+                ),
+              ],
+            ),
+          ),
+          // 代码内容
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SelectableText(
+                code,
+                style: const TextStyle(
+                  color: Colors.black87, // 改为深色文字
+                  fontFamily: 'monospace',
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -459,7 +734,7 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                         const SizedBox(width: 6),
                         const Text(
-                          '熱門問題：',
+                          '热门问题：',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -819,7 +1094,7 @@ class _ChatPageState extends State<ChatPage> {
         );
       }
     } catch (e) {
-      print('本地寫入 Question 失敗: ' + e.toString());
+      print('本地写入 Question 失败: ' + e.toString());
     }
     // --- 新增結束 ---
 
@@ -868,7 +1143,7 @@ class _ChatPageState extends State<ChatPage> {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      print('報告問題點擊失敗: $e');
+      print('报告问题点击失败: $e');
       // 失敗時不做任何處理，這只是統計數據
     }
   }

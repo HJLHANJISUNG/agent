@@ -16,7 +16,7 @@ from pydantic import BaseModel
 import traceback
 import jwt
 from typing import Optional
-from backend.routers.users import SECRET_KEY, ALGORITHM  # 導入 users.py 中的 JWT 設定
+from backend.database.routers.users import SECRET_KEY, ALGORITHM  # 導入 users.py 中的 JWT 設定
 
 router = APIRouter()
 

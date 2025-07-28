@@ -9,6 +9,8 @@ import 'dart:io';
 import 'package:desktop_drop/desktop_drop.dart';
 import '../widgets/custom_card.dart';
 import 'package:app/widgets/db_test_page.dart';
+import '../widgets/knowledge_page.dart';
+import '../widgets/dashboard_page.dart';
 
 class HomePage extends StatefulWidget {
   final bool isAdmin;
@@ -286,7 +288,24 @@ class _HomePageState extends State<HomePage> {
       desc: desc,
       color: color,
       onTap: () {
-        // TODO: 可根據title或index跳轉對應功能
+        // 根据 title 跳转到对应页面
+        if (title == '知识库') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => KnowledgePage()),
+          );
+        } else if (title == '看板' && widget.isAdmin) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DashboardPage(isAdmin: true),
+            ),
+          );
+        } else if (title == '文字问答') {
+          // TODO: 跳转到问答页面
+        } else if (title == '反馈') {
+          // TODO: 跳转到反馈页面
+        }
       },
     );
   }

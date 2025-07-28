@@ -1,10 +1,26 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 class FeedbackService {
-  // API 端點
-  static const String baseUrl = 'http://10.20.225.123:8000/api'; // 使用本機實際 IP 地址
+  // API 端點 - 根據平台選擇適當的URL
+  String get baseUrl {
+    if (kIsWeb) {
+      // Web平台使用相對路徑
+      return '/api';
+    } else if (Platform.isAndroid) {
+      // Android模擬器中，localhost對應於10.0.2.2
+      return 'http://10.0.2.2:8000/api';
+    } else if (Platform.isIOS) {
+      // iOS模擬器中使用localhost
+      return 'http://localhost:8000/api';
+    } else {
+      // 桌面平台使用localhost
+      return 'http://localhost:8000/api';
+    }
+  }
 
   // 獲取用戶反饋列表
   Future<List<Map<String, dynamic>>> getFeedbacks({
@@ -13,7 +29,7 @@ class FeedbackService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/feedbacks/?limit=$limit&offset=$offset'),
+        Uri.parse('${baseUrl}/feedbacks/?limit=$limit&offset=$offset'),
         headers: await _getAuthHeaders(),
       );
 
@@ -38,7 +54,7 @@ class FeedbackService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/feedbacks/'),
+        Uri.parse('${baseUrl}/feedbacks/'),
         headers: {
           'Content-Type': 'application/json',
           ...(await _getAuthHeaders()),
@@ -57,6 +73,7 @@ class FeedbackService {
         throw Exception('Failed to submit feedback: ${response.statusCode}');
       }
     } catch (e) {
+      print('Feedback submission error: $e');
       // 如果API調用失敗，返回模擬響應
       return {
         'success': true,
@@ -70,7 +87,7 @@ class FeedbackService {
   Future<Map<String, dynamic>> getFeedbackStats() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/feedbacks/stats'),
+        Uri.parse('${baseUrl}/feedbacks/stats'),
         headers: await _getAuthHeaders(),
       );
 
@@ -112,7 +129,7 @@ class FeedbackService {
   }) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/feedbacks/$feedbackId/status'),
+        Uri.parse('${baseUrl}/feedbacks/$feedbackId/status'),
         headers: {
           'Content-Type': 'application/json',
           ...(await _getAuthHeaders()),

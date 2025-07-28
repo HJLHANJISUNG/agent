@@ -26,6 +26,8 @@ Future<void> main() async {
   final conversationService = ConversationService();
   await conversationService.initialize();
 
+  await DatabaseService().insertTestKnowledge(); // 啟動時自動插入測試知識庫數據
+
   runApp(
     MultiProvider(
       providers: [

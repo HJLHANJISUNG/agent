@@ -89,9 +89,27 @@ class ConversationService extends ChangeNotifier {
       });
 
       print('成功保存對話到數據庫: ${currentConversation!.id}');
+
+      // 通知看板刷新
+      _notifyDashboardRefresh();
     } catch (e) {
       print('保存對話到數據庫時出錯: $e');
     }
+  }
+
+  // 通知看板刷新的方法
+  void _notifyDashboardRefresh() {
+    // 使用延迟确保UI更新完成后再刷新看板
+    Future.delayed(const Duration(milliseconds: 500), () {
+      try {
+        // 导入DashboardPageState类
+        // 注意：这里需要动态导入，因为可能存在循环依赖
+        // 暂时使用一个简单的通知机制
+        notifyListeners();
+      } catch (e) {
+        print('通知看板刷新失敗: $e');
+      }
+    });
   }
 
   // 保存所有對話到數據庫
@@ -222,6 +240,140 @@ class ConversationService extends ChangeNotifier {
     saveCurrentConversation();
   }
 
+  // 生成对话标题的辅助方法
+  String _generateConversationTitle(String firstMessage) {
+    // 清理消息内容，移除多余空格和换行
+    String cleanedMessage = firstMessage.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+    // 如果消息太短，直接返回
+    if (cleanedMessage.length <= 20) {
+      return cleanedMessage;
+    }
+
+    // 尝试提取关键词
+    List<String> keywords = _extractKeywords(cleanedMessage);
+
+    // 如果有关键词，使用关键词组合
+    if (keywords.isNotEmpty) {
+      String title = keywords.take(3).join(' · ');
+      return title.length > 30 ? title.substring(0, 30) + '...' : title;
+    }
+
+    // 否则使用前20个字符
+    return cleanedMessage.substring(0, 20) + '...';
+  }
+
+  // 提取关键词的辅助方法
+  List<String> _extractKeywords(String message) {
+    // 网络协议相关关键词
+    final protocolKeywords = [
+      'OSPF',
+      'BGP',
+      'RIP',
+      'EIGRP',
+      'VLAN',
+      'STP',
+      'RSTP',
+      'MSTP',
+      'ACL',
+      'NAT',
+      'VPN',
+      'QoS',
+      'MPLS',
+      'VRRP',
+      'HSRP',
+      'GLBP',
+      'DHCP',
+      'DNS',
+      'HTTP',
+      'HTTPS',
+      'FTP',
+      'SMTP',
+      'SNMP',
+      'SSH',
+      'TCP',
+      'UDP',
+      'ICMP',
+      'ARP',
+      'RARP',
+      'IGMP',
+      'PIM',
+      'OSPFv3',
+      'IPv4',
+      'IPv6',
+      'RIPng',
+      'BGP4+',
+      'IS-IS',
+      'LDP',
+      'RSVP',
+    ];
+
+    // 网络设备相关关键词
+    final deviceKeywords = [
+      '路由器',
+      '交换机',
+      '防火墙',
+      '负载均衡器',
+      '网关',
+      '网桥',
+      'Router',
+      'Switch',
+      'Firewall',
+      'Load Balancer',
+      'Gateway',
+      'Bridge',
+    ];
+
+    // 网络问题相关关键词
+    final problemKeywords = [
+      '配置',
+      '故障',
+      '排查',
+      '优化',
+      '监控',
+      '安全',
+      '性能',
+      '连接',
+      '通信',
+      '路由',
+      '交换',
+      '访问',
+      '控制',
+      '管理',
+      'Configuration',
+      'Troubleshooting',
+      'Optimization',
+      'Monitoring',
+      'Security',
+    ];
+
+    List<String> foundKeywords = [];
+    String upperMessage = message.toUpperCase();
+
+    // 检查协议关键词
+    for (String keyword in protocolKeywords) {
+      if (upperMessage.contains(keyword.toUpperCase())) {
+        foundKeywords.add(keyword);
+      }
+    }
+
+    // 检查设备关键词
+    for (String keyword in deviceKeywords) {
+      if (upperMessage.contains(keyword)) {
+        foundKeywords.add(keyword);
+      }
+    }
+
+    // 检查问题关键词
+    for (String keyword in problemKeywords) {
+      if (upperMessage.contains(keyword)) {
+        foundKeywords.add(keyword);
+      }
+    }
+
+    return foundKeywords;
+  }
+
   // 修改对话标题
   Future<void> updateConversationTitle(int index, String newTitle) async {
     if (index < 0 || index >= _conversations.length) return;
@@ -233,6 +385,30 @@ class ConversationService extends ChangeNotifier {
     if (_userId != null) {
       final conversationId = _conversations[index].id;
       await _databaseService.updateConversationTitle(conversationId, newTitle);
+    }
+  }
+
+  // 新增：自动更新对话标题
+  Future<void> updateConversationTitleFromFirstMessage(String message) async {
+    if (currentConversation == null) return;
+
+    // 如果对话还没有标题或者是默认标题，则生成新标题
+    if (currentConversation!.title == '新对话' ||
+        currentConversation!.title.isEmpty ||
+        currentConversation!.messages.length == 1) {
+      String newTitle = _generateConversationTitle(message);
+      currentConversation!.title = newTitle;
+      currentConversation!.updatedAt = DateTime.now();
+      notifyListeners();
+
+      // 更新數據庫中的標題
+      if (_userId != null) {
+        final conversationId = currentConversation!.id;
+        await _databaseService.updateConversationTitle(
+          conversationId,
+          newTitle,
+        );
+      }
     }
   }
 
@@ -269,6 +445,11 @@ class ConversationService extends ChangeNotifier {
       final userMessage = Message(role: 'user', content: text);
       currentConversation!.messages.add(userMessage);
       notifyListeners(); // 立即更新 UI 顯示用戶消息
+
+      // 自动更新对话标题（如果是第一条消息）
+      if (currentConversation!.messages.length == 1) {
+        await updateConversationTitleFromFirstMessage(text);
+      }
 
       // 添加一條空的助手消息，用於流式更新
       final aiMessage = Message(role: 'assistant', content: '');
@@ -387,6 +568,11 @@ class ConversationService extends ChangeNotifier {
     final userMessage = Message(role: 'user', content: text);
     currentConversation!.messages.add(userMessage);
     currentConversation!.updatedAt = DateTime.now();
+
+    // 自动更新对话标题（如果是第一条消息）
+    if (currentConversation!.messages.length == 1) {
+      await updateConversationTitleFromFirstMessage(text);
+    }
 
     // --- 新增：同步寫入本地 Question 表 ---
     try {
