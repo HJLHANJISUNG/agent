@@ -1,8 +1,11 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import '../services/database_service.dart';
+import '../services/category_service.dart';
+import '../widgets/custom_card.dart';
+import '../widgets/aurora_background.dart';
 import '../services/feedback_service.dart';
 import '../services/conversation_service.dart';
-import '../services/database_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/widgets.dart';
 import 'dart:math' as math;
@@ -197,7 +200,7 @@ class DashboardPageState extends State<DashboardPage>
       // 獲取實際的知識條目數量
       final knowledge = await db.getAllKnowledge();
       print(
-        '【调试】Knowledge 條目：' + knowledge.map((k) => k.toString()).join('\n'),
+        '【调试】Knowledge 条目：' + knowledge.map((k) => k.toString()).join('\n'),
       );
       final kCount = knowledge.length;
       print('DashboardPage: kCount = $kCount');
@@ -205,7 +208,7 @@ class DashboardPageState extends State<DashboardPage>
       // 獲取實際的反饋數量
       final feedbacks = await db.getFeedbacks();
       print(
-        '【调试】DashboardPage: 反饋數據 = ' +
+        '【调试】DashboardPage: 反馈数据 = ' +
             feedbacks.map((f) => f.toString()).join('\n'),
       );
       final fCount = feedbacks.length;
@@ -373,7 +376,7 @@ class DashboardPageState extends State<DashboardPage>
         final question = uniqueQuestions[i];
         activities.add({
           'type': 'question',
-          'user': question['user_id'] ?? '未知用戶',
+          'user': question['user_id'] ?? '未知用户',
           'content': question['content'] ?? '未知问题',
           'time': DateTime.parse(
             question['ask_time'] ?? DateTime.now().toIso8601String(),
@@ -450,61 +453,12 @@ class DashboardPageState extends State<DashboardPage>
         }
       }
 
+      // 使用 CategoryService 進行智能分類
       for (var question in uniqueQuestions) {
-        final content = question['content']?.toString().toUpperCase() ?? '';
+        final content = question['content']?.toString() ?? '';
 
-        // 檢查協議關鍵詞
-        final protocols = [
-          'OSPF',
-          'BGP',
-          'RIP',
-          'EIGRP',
-          'VLAN',
-          'STP',
-          'RSTP',
-          'MSTP',
-          'ACL',
-          'NAT',
-          'VPN',
-          'QoS',
-          'MPLS',
-          'VRRP',
-          'HSRP',
-          'GLBP',
-          'DHCP',
-          'DNS',
-          'HTTP',
-          'HTTPS',
-          'FTP',
-          'SMTP',
-          'SNMP',
-          'SSH',
-          'TCP',
-          'UDP',
-          'ICMP',
-          'ARP',
-          'RARP',
-          'IGMP',
-          'PIM',
-          'OSPFV3',
-          'IPV4',
-          'IPV6',
-          'RIPNG',
-          'BGP4+',
-          'IS-IS',
-          'LDP',
-          'RSVP',
-        ];
-
-        String? foundProtocol;
-        for (var protocol in protocols) {
-          if (content.contains(protocol)) {
-            foundProtocol = protocol;
-            break;
-          }
-        }
-
-        final category = foundProtocol ?? '其他';
+        // 使用 CategoryService 進行分類
+        final category = CategoryService.categorizeQuestion(content);
         categoryCount[category] = (categoryCount[category] ?? 0) + 1;
         totalCount++;
       }
@@ -519,11 +473,18 @@ class DashboardPageState extends State<DashboardPage>
           'category': entry.key,
           'count': entry.value,
           'percentage': percentage,
+          'displayName': CategoryService.getCategoryDisplayName(entry.key),
+          'color': CategoryService.getCategoryColor(entry.key),
         });
       }
 
-      // 按數量排序
-      categories.sort((a, b) => b['count'].compareTo(a['count']));
+      // 按數量排序，但確保"其他"類別在最後
+      categories.sort((a, b) {
+        if (a['category'] == '其他') return 1;
+        if (b['category'] == '其他') return -1;
+        return b['count'].compareTo(a['count']);
+      });
+
       return categories;
     } catch (e) {
       print('获取问题分类统计失败: $e');
@@ -1226,6 +1187,8 @@ class DashboardPageState extends State<DashboardPage>
           final String name = category['category'] as String;
           final int count = category['count'] as int;
           final int percentage = category['percentage'] as int;
+          final String displayName = category['displayName'] as String? ?? name;
+          final int color = category['color'] as int? ?? 0xFF9E9E9E;
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
@@ -1234,51 +1197,35 @@ class DashboardPageState extends State<DashboardPage>
               children: [
                 Row(
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Color(color),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      '$count 个问题',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '$percentage%',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFE60012),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Stack(
-                  children: [
-                    Container(
-                      height: 8,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEEEEE),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    FractionallySizedBox(
-                      widthFactor: percentage / 100,
-                      child: Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _getCategoryColor(name),
-                          borderRadius: BorderRadius.circular(4),
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
+                    Text(
+                      '$count ($percentage%)',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: percentage / 100,
+                  backgroundColor: Colors.grey[200],
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(color)),
                 ),
               ],
             ),

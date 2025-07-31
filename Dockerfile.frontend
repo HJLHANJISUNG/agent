@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # build 階段
 FROM debian:bullseye AS build
 

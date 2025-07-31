@@ -396,7 +396,7 @@ class _AuthPageState extends State<AuthPage> {
         print('注册失败: ${result['error']}');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('注册冊失敗：${result['error']}')));
+        ).showSnackBar(SnackBar(content: Text('注册失敗：${result['error']}')));
         // 注册失败时重置加载状态
         setState(() => _isLoading = false);
       }

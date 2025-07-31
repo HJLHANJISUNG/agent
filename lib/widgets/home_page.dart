@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
         service.currentConversation!.messages.last.content,
       );
     } catch (e) {
-      service.addMessageToCurrent('assistant', '抱歉，發生錯誤: $e');
+      service.addMessageToCurrent('assistant', '抱歉，发生错误: $e');
     }
   }
 

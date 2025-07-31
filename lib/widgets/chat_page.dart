@@ -61,7 +61,7 @@ class _ChatPageState extends State<ChatPage> {
         }
       }
     } catch (e) {
-      print('獲取熱點問題失敗: $e');
+      print('获取热点问题失败: $e');
       // 使用默認問題
       setState(() {
         _hotQuestionData = [
@@ -249,7 +249,7 @@ class _ChatPageState extends State<ChatPage> {
           color: Colors.amber[600],
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
-          tooltip: '評價',
+          tooltip: '评价',
           onPressed: () {
             _showFeedbackDialog(message);
           },

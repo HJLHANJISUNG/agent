@@ -48,23 +48,23 @@ class ConversationService extends ChangeNotifier {
         _userId!,
       );
 
-      // 清空當前對話列表
+      // 清空当前对话列表
       _conversations.clear();
 
-      // 將數據轉換為Conversation對象
+      // 将数据转换为Conversation对象
       for (var convData in conversationsData) {
         final messagesMaps = convData['messages'] as List<Map<String, dynamic>>;
         final conversation = Conversation.fromMap(convData, messagesMaps);
         _conversations.add(conversation);
       }
 
-      // 重設當前索引
+      // 重设当前索引
       _currentIndex = _conversations.isEmpty ? 0 : 0;
 
       notifyListeners();
-      print('成功從數據庫加載 ${_conversations.length} 個對話');
+      print('成功从数据库加载 ${_conversations.length} 个对话');
     } catch (e) {
-      print('從數據庫加載對話時出錯: $e');
+      print('从数据库加载对话时出错: $e');
     }
   }
 
@@ -88,12 +88,12 @@ class ConversationService extends ChangeNotifier {
         'messages': jsonEncode(messagesMapList),
       });
 
-      print('成功保存對話到數據庫: ${currentConversation!.id}');
+      print('成功保存对话到数据库: ${currentConversation!.id}');
 
       // 通知看板刷新
       _notifyDashboardRefresh();
     } catch (e) {
-      print('保存對話到數據庫時出錯: $e');
+      print('保存对话到数据库时出错: $e');
     }
   }
 
@@ -107,7 +107,7 @@ class ConversationService extends ChangeNotifier {
         // 暂时使用一个简单的通知机制
         notifyListeners();
       } catch (e) {
-        print('通知看板刷新失敗: $e');
+        print('通知看板刷新失败: $e');
       }
     });
   }
@@ -134,9 +134,9 @@ class ConversationService extends ChangeNotifier {
         });
       }
 
-      print('成功保存所有對話到數據庫');
+      print('成功保存所有对话到数据库');
     } catch (e) {
-      print('保存所有對話到數據庫時出錯: $e');
+      print('保存所有对话到数据库时出错: $e');
     }
   }
 
@@ -414,11 +414,11 @@ class ConversationService extends ChangeNotifier {
 
   // 新增：發送消息到後端並獲取AI回複
   Future<void> sendMessage(String text, {List<PlatformFile>? files}) async {
-    print("ConversationService: sendMessage 開始");
+    print("ConversationService: sendMessage 开始");
 
     if (!isLoggedIn) {
       print('Error: User not logged in');
-      final errorMessage = Message(role: 'assistant', content: '請先登入後再使用聊天功能');
+      final errorMessage = Message(role: 'assistant', content: '请先登录后再使用聊天功能');
       if (currentConversation == null) {
         createNewConversation();
       }
@@ -433,7 +433,7 @@ class ConversationService extends ChangeNotifier {
       print('Created new conversation: ${currentConversation!.id}');
     }
 
-    print("ConversationService: 當前對話 ID: ${currentConversation!.id}");
+    print("ConversationService: 当前对话 ID: ${currentConversation!.id}");
 
     final url = Uri.parse('$_baseUrl/chat');
     print('Sending request to: $url');
@@ -441,17 +441,17 @@ class ConversationService extends ChangeNotifier {
     print('Content: $text');
 
     try {
-      // 添加用戶消息到對話
+      // 添加用户消息到对话
       final userMessage = Message(role: 'user', content: text);
       currentConversation!.messages.add(userMessage);
-      notifyListeners(); // 立即更新 UI 顯示用戶消息
+      notifyListeners(); // 立即更新 UI 显示用户消息
 
       // 自动更新对话标题（如果是第一条消息）
       if (currentConversation!.messages.length == 1) {
         await updateConversationTitleFromFirstMessage(text);
       }
 
-      // 添加一條空的助手消息，用於流式更新
+      // 添加一条空的助手消息，用于流式更新
       final aiMessage = Message(role: 'assistant', content: '');
       currentConversation!.messages.add(aiMessage);
       notifyListeners();
@@ -481,7 +481,7 @@ class ConversationService extends ChangeNotifier {
         final streamedResponse = await request.send();
         response = await http.Response.fromStream(streamedResponse);
       }
-      // 如果沒有文件，使用普通的 JSON 請求
+      // 如果没有文件，使用普通的 JSON 请求
       else {
         print('Sending JSON request...');
         headers['Content-Type'] = 'application/json';
@@ -499,7 +499,7 @@ class ConversationService extends ChangeNotifier {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         print('Parsed response data: $responseData');
 
-        // 更新之前創建的空助手消息
+        // 更新之前创建的空助手消息
         final lastIndex = currentConversation!.messages.length - 1;
         currentConversation!.messages[lastIndex] = Message(
           role: 'assistant',
@@ -508,29 +508,29 @@ class ConversationService extends ChangeNotifier {
         );
         print('AI message updated');
       } else {
-        // 更新空的助手消息為錯誤信息
+        // 更新空的助手消息为错误信息
         final lastIndex = currentConversation!.messages.length - 1;
         currentConversation!.messages[lastIndex] = Message(
           role: 'assistant',
-          content: '抱歉，無法獲取回覆。錯誤: ${response.statusCode}\n${response.body}',
+          content: '抱歉，无法获取回复。错误: ${response.statusCode}\n${response.body}',
         );
         print('Error message updated');
       }
     } catch (e) {
       print('Exception occurred: $e');
-      // 檢查是否已經添加了助手消息
+      // 检查是否已经添加了助手消息
       if (currentConversation!.messages.isNotEmpty &&
           currentConversation!.messages.last.role == 'assistant') {
         // 更新已存在的助手消息
         final lastIndex = currentConversation!.messages.length - 1;
         currentConversation!.messages[lastIndex] = Message(
           role: 'assistant',
-          content: '抱歉，發生網絡錯誤: $e',
+          content: '抱歉，发生网络错误: $e',
         );
       } else {
-        // 添加新的錯誤消息
+        // 添加新的错误消息
         currentConversation!.messages.add(
-          Message(role: 'assistant', content: '抱歉，發生網絡錯誤: $e'),
+          Message(role: 'assistant', content: '抱歉，发生网络错误: $e'),
         );
       }
     } finally {
@@ -543,11 +543,11 @@ class ConversationService extends ChangeNotifier {
     String text, {
     List<PlatformFile>? files,
   }) async {
-    print("ConversationService: sendMessageWithStream 開始");
+    print("ConversationService: sendMessageWithStream 开始");
 
     if (!isLoggedIn) {
       print('Error: User not logged in');
-      final errorMessage = Message(role: 'assistant', content: '請先登入後再使用聊天功能');
+      final errorMessage = Message(role: 'assistant', content: '请先登录后再使用聊天功能');
       if (currentConversation == null) {
         createNewConversation();
       }
@@ -564,7 +564,7 @@ class ConversationService extends ChangeNotifier {
       print('Created new conversation: ${currentConversation!.id}');
     }
 
-    // 添加用戶消息到對話
+    // 添加用户消息到对话
     final userMessage = Message(role: 'user', content: text);
     currentConversation!.messages.add(userMessage);
     currentConversation!.updatedAt = DateTime.now();
@@ -574,7 +574,7 @@ class ConversationService extends ChangeNotifier {
       await updateConversationTitleFromFirstMessage(text);
     }
 
-    // --- 新增：同步寫入本地 Question 表 ---
+    // --- 新增：同步写入本地 Question 表 ---
     try {
       final userId = _userId;
       if (userId != null) {
@@ -591,28 +591,28 @@ class ConversationService extends ChangeNotifier {
         );
       }
     } catch (e) {
-      print('本地寫入 Question 失敗: $e');
+      print('本地写入 Question 失败: $e');
     }
-    // --- 新增結束 ---
+    // --- 新增结束 ---
 
-    // 添加一條空的助手消息，用於流式更新
+    // 添加一条空的助手消息，用于流式更新
     final aiMessage = Message(role: 'assistant', content: '');
     currentConversation!.messages.add(aiMessage);
     notifyListeners();
 
-    // 先保存用戶消息到數據庫
+    // 先保存用户消息到数据库
     saveCurrentConversation();
 
     try {
       final url = Uri.parse('$_baseUrl/chat');
       print('Sending request to: $url');
 
-      // 發送實際請求並獲取完整回答
+      // 发送实际请求并获取完整回答
       http.Response response;
       String fullResponse = '';
       String? solutionId;
 
-      // 先發送請求獲取完整回答
+      // 先发送请求获取完整回答
       try {
         final Map<String, String> headers = {'Authorization': 'Bearer $_token'};
 
@@ -649,34 +649,34 @@ class ConversationService extends ChangeNotifier {
           solutionId = responseData['solution_id'];
         } else {
           fullResponse =
-              '抱歉，無法獲取回覆。錯誤: ${response.statusCode}\n${response.body}';
+              '抱歉，无法获取回复。错误: ${response.statusCode}\n${response.body}';
         }
       } catch (e) {
         print('Request error: $e');
-        fullResponse = '抱歉，發生網絡錯誤: $e';
+        fullResponse = '抱歉，发生网络错误: $e';
       }
 
-      // 顯示打字機效果
+      // 显示打字机效果
       String currentText = '';
       String displayText = '';
 
-      // 先顯示思考中...
+      // 先显示思考中...
       _updateAssistantMessage('思考中...');
       await Future.delayed(const Duration(milliseconds: 800));
 
-      // 處理延遲標記並移除它們
+      // 处理延迟标记并移除它们
       String cleanedResponse = fullResponse;
-      // 移除所有標記，用於顯示
+      // 移除所有标记，用于显示
       cleanedResponse = cleanedResponse
           .replaceAll('<pause-short>', '')
           .replaceAll('<pause-medium>', '')
           .replaceAll('<pause-long>', '');
 
-      // 逐字顯示回答
+      // 逐字显示回答
       List<String> characters = cleanedResponse.split('');
 
       for (int i = 0; i < characters.length; i++) {
-        // 每添加一個字符就更新一次消息
+        // 每添加一个字符就更新一次消息
         currentText += characters[i];
         displayText = currentText;
 
@@ -693,17 +693,17 @@ class ConversationService extends ChangeNotifier {
             currentConversation!.updatedAt = DateTime.now();
             notifyListeners();
 
-            // 每十個字符保存一次對話（減少數據庫操作次數）
+            // 每十个字符保存一次对话（减少数据库操作次数）
             if (i % 10 == 0 && i > 0) {
               saveCurrentConversation();
             }
           }
         }
 
-        // 根據字符類型調整延遲時間，使顯示更自然
-        int delay = 20; // 基本延遲時間，加快一點
+        // 根据字符类型调整延迟时间，使显示更自然
+        int delay = 20; // 基本延迟时间，加快一点
 
-        // 檢查是否需要根據上下文暫停
+        // 检查是否需要根据上下文暂停
         if (i + 10 < cleanedResponse.length) {
           String nextChars = cleanedResponse.substring(i, i + 10);
           if (nextChars.contains('<pause-short>')) {
@@ -715,16 +715,16 @@ class ConversationService extends ChangeNotifier {
           }
         }
 
-        // 標點符號後面稍微停頓長一些
+        // 标点符号后面稍微停顿长一些
         if ('.。!！?？,，;；:：'.contains(characters[i])) {
           delay = Math.max(delay, 150);
         }
-        // 換行符後停頓更長
+        // 换行符后停顿更长
         else if (characters[i] == '\n') {
           delay = Math.max(delay, 250);
         }
 
-        // 每幾個字符檢查一下是否有特殊標記需要跳過
+        // 每几个字符检查一下是否有特殊标记需要跳过
         if (i % 5 == 0 && i + 15 < cleanedResponse.length) {
           String chunk = cleanedResponse.substring(i, i + 15);
           if (chunk.contains('<pause-')) {
@@ -748,14 +748,14 @@ class ConversationService extends ChangeNotifier {
         await Future.delayed(Duration(milliseconds: delay));
       }
 
-      // 完成後，確保顯示的是乾淨的文本（沒有暫停標記）
+      // 完成后，确保显示的是干净的文本（没有暂停标记）
       if (fullResponse.contains('<pause-')) {
         String finalText = fullResponse
             .replaceAll('<pause-short>', '')
             .replaceAll('<pause-medium>', '')
             .replaceAll('<pause-long>', '');
 
-        // 更新最終消息並保存
+        // 更新最终消息并保存
         if (currentConversation != null &&
             currentConversation!.messages.isNotEmpty) {
           final lastIndex = currentConversation!.messages.length - 1;
@@ -768,23 +768,23 @@ class ConversationService extends ChangeNotifier {
             currentConversation!.updatedAt = DateTime.now();
             notifyListeners();
 
-            // 保存最終結果到數據庫
+            // 保存最终结果到数据库
             saveCurrentConversation();
           }
         }
       } else {
-        // 保存最終結果到數據庫
+        // 保存最终结果到数据库
         saveCurrentConversation();
       }
     } catch (e) {
       print('Exception occurred: $e');
-      _updateAssistantMessage('抱歉，發生網絡錯誤: $e');
-      // 保存錯誤信息到數據庫
+      _updateAssistantMessage('抱歉，发生网络错误: $e');
+      // 保存错误信息到数据库
       saveCurrentConversation();
     }
   }
 
-  // 更新助手消息的輔助方法
+  // 更新助手消息的辅助方法
   void _updateAssistantMessage(String content, {String? solutionId}) {
     if (currentConversation != null &&
         currentConversation!.messages.isNotEmpty) {
@@ -798,7 +798,7 @@ class ConversationService extends ChangeNotifier {
         currentConversation!.updatedAt = DateTime.now();
         notifyListeners();
 
-        // 保存到數據庫
+        // 保存到数据库
         saveCurrentConversation();
       }
     }

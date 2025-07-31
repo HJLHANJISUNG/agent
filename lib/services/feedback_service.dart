@@ -112,17 +112,17 @@ class FeedbackService {
           {'rating': 1, 'count': 12, 'percentage': 1.0},
         ],
         'category_distribution': [
-          {'category': 'OSPF配置問題', 'count': 345, 'percentage': 28.0},
+          {'category': 'OSPF配置问题', 'count': 345, 'percentage': 28.0},
           {'category': 'BGP路由通告', 'count': 287, 'percentage': 23.0},
-          {'category': 'VLAN通信問題', 'count': 245, 'percentage': 20.0},
-          {'category': 'ACL規則配置', 'count': 187, 'percentage': 15.0},
-          {'category': '其他問題', 'count': 181, 'percentage': 14.0},
+          {'category': 'VLAN通信问题', 'count': 245, 'percentage': 20.0},
+          {'category': 'ACL规则配置', 'count': 187, 'percentage': 15.0},
+          {'category': '其他问题', 'count': 181, 'percentage': 14.0},
         ],
       };
     }
   }
 
-  // 更新反饋狀態（僅管理員）
+  // 更新反馈状态（仅管理员）
   Future<bool> updateFeedbackStatus({
     required String feedbackId,
     required String status,
@@ -139,7 +139,7 @@ class FeedbackService {
 
       return response.statusCode == 200;
     } catch (e) {
-      // 模擬成功響應
+      // 模拟成功响应
       return true;
     }
   }
@@ -156,38 +156,38 @@ class FeedbackService {
     return {};
   }
 
-  // 模擬反饋數據（當API不可用時使用）
+  // 模拟反馈数据（当API不可用时使用）
   List<Map<String, dynamic>> _getMockFeedbacks() {
     return [
       {
         'feedback_id': '1',
         'user_id': '101',
-        'user_name': '張工程師',
+        'user_name': '张工程师',
         'solution_id': '201',
         'rating': 5,
-        'comment': '回答非常准確，解決了我的OSPF邻居问题，感谢！',
+        'comment': '回答非常准确，解决了我的OSPF邻居问题，感谢！',
         'created_at': '2024-01-15',
-        'status': '已處理',
+        'status': '已处理',
       },
       {
         'feedback_id': '2',
         'user_id': '102',
-        'user_name': '李網絡',
+        'user_name': '李网络',
         'solution_id': '202',
         'rating': 4,
         'comment': '知识库内容丰富，但希望能增加更多BGP相关的实例。',
         'created_at': '2024-01-14',
-        'status': '待處理',
+        'status': '待处理',
       },
       {
         'feedback_id': '3',
         'user_id': '103',
-        'user_name': '王技術',
+        'user_name': '王技术',
         'solution_id': '203',
         'rating': 5,
         'comment': '界面友好，搜索功能强大，推荐给同事使用。',
         'created_at': '2024-01-13',
-        'status': '已處理',
+        'status': '已处理',
       },
       {
         'feedback_id': '4',
