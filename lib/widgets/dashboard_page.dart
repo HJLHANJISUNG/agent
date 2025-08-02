@@ -12,7 +12,7 @@ import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'dart:async';
 
-// 頂層函數，供多個 widget 調用
+// 顶层函数，供多个 widget 调用
 Widget buildStatCard(String title, String value, IconData icon, Color color) {
   return Container(
     padding: const EdgeInsets.all(20),
@@ -81,7 +81,7 @@ class DashboardPageState extends State<DashboardPage>
   int solvedCount = 0;
   int knowledgeCount = 0;
   int feedbackCount = 0;
-  // 新增管理員統計變數
+  // 新增管理员统计变量
   int activeUserCount = 0;
   int newUserCount = 0;
   double solvedRate = 0.0;
@@ -89,23 +89,23 @@ class DashboardPageState extends State<DashboardPage>
   String lastKnowledgeUpdate = '';
   bool _loading = true;
 
-  // 新增更多用戶數據統計
+  // 新增更多用户数据统计
   int totalUserCount = 0;
   List<Map<String, dynamic>> recentFeedbacks = [];
   Map<String, int> protocolDistribution = {};
   Map<String, dynamic> feedbackStats = {};
   List<Map<String, dynamic>> userList = [];
 
-  // 問題分類統計
+  // 问题分类统计
   List<Map<String, dynamic>> questionCategories = [];
 
-  // 知識庫覆蓋度數據
+  // 知识库覆盖度数据
   Map<String, Map<String, int>> knowledgeCoverage = {};
 
-  // 最近活動記錄
+  // 最近活动记录
   List<Map<String, dynamic>> recentActivities = [];
 
-  // 自動刷新計時器
+  // 自动刷新计时器
   Timer? _refreshTimer;
 
   // 最后更新时间
@@ -155,12 +155,12 @@ class DashboardPageState extends State<DashboardPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      // 應用恢復時刷新數據
+      // 应用恢复时刷新数据
       loadStats();
     }
   }
 
-  // 開始自動刷新
+  // 开始自动刷新
   void _startAutoRefresh() {
     _refreshTimer?.cancel();
     _refreshTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
@@ -172,12 +172,12 @@ class DashboardPageState extends State<DashboardPage>
     });
   }
 
-  // 刷新數據
+  // 刷新数据
   Future<void> refreshData() async {
     await loadStats();
   }
 
-  // 加載統計數據
+  // 加载统计数据
   Future<void> loadStats() async {
     if (!mounted) return;
 
@@ -187,17 +187,17 @@ class DashboardPageState extends State<DashboardPage>
       final userId = await db.getCurrentUserId();
       print('DashboardPage: userId = $userId');
 
-      // 獲取實際的問題數量
+      // 获取实际的问题数量
       final questions = await db.getAllQuestions();
       final qCount = questions.length;
       print('DashboardPage: qCount = $qCount');
 
-      // 獲取實際的解決問題數量
+      // 获取实际的解决问题数量
       final solvedQuestions = questions.where((q) => q['solved'] == 1).length;
       final sCount = solvedQuestions;
       print('DashboardPage: sCount = $sCount');
 
-      // 獲取實際的知識條目數量
+      // 获取实际的知识条目数量
       final knowledge = await db.getAllKnowledge();
       print(
         '【调试】Knowledge 条目：' + knowledge.map((k) => k.toString()).join('\n'),

@@ -18,16 +18,16 @@ def get_db():
 
 @router.get("/feedbacks/")
 def get_feedbacks(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    """獲取反饋列表"""
+    """获取反馈列表"""
     try:
-        # 從數據庫獲取反饋
+        # 从数据库获取反馈
         feedbacks = db.query(
             Feedback, User.username.label('user_name')
         ).join(
             User, User.user_id == Feedback.user_id
         ).offset(skip).limit(limit).all()
         
-        # 格式化結果
+        # 格式化结果
         result = []
         for feedback, user_name in feedbacks:
             result.append({
@@ -38,7 +38,7 @@ def get_feedbacks(skip: int = 0, limit: int = 10, db: Session = Depends(get_db))
                 "rating": feedback.rating,
                 "comment": feedback.comment,
                 "created_at": feedback.created_at.strftime("%Y-%m-%d") if feedback.created_at else None,
-                "status": feedback.status if hasattr(feedback, 'status') else "待處理"
+                "status": feedback.status if hasattr(feedback, 'status') else "待处理"
             })
         
         return result
@@ -48,20 +48,20 @@ def get_feedbacks(skip: int = 0, limit: int = 10, db: Session = Depends(get_db))
 
 @router.get("/feedbacks/stats")
 def get_feedback_stats(db: Session = Depends(get_db)):
-    """獲取反饋統計數據"""
+    """获取反馈统计数据"""
     try:
-        # 獲取總數
+        # 获取总数
         total_count = db.query(func.count(Feedback.feedback_id)).scalar() or 0
         
-        # 獲取平均評分
+        # 获取平均评分
         average_rating = db.query(func.avg(Feedback.rating)).scalar() or 0
         
-        # 獲取待處理數量 (假設有status欄位)
+        # 获取待处理数量 (假设有status字段)
         pending_count = db.query(func.count(Feedback.feedback_id)).filter(
-            Feedback.status == "待處理"
+            Feedback.status == "待处理"
         ).scalar() or 0
         
-        # 獲取評分分佈
+        # 获取评分分布
         rating_distribution = []
         for rating in range(1, 6):
             count = db.query(func.count(Feedback.feedback_id)).filter(
@@ -74,11 +74,11 @@ def get_feedback_stats(db: Session = Depends(get_db)):
                 "percentage": percentage
             })
         
-        # 獲取實際的問題分類分佈
+        # 获取实际的问题分类分布
         from sqlalchemy import text
         from sqlalchemy.orm import Session
         
-        # 定義協議關鍵詞列表
+        # 定义协议关键词列表
         protocol_keywords = [
             'OSPF', 'BGP', 'RIP', 'EIGRP', 'VLAN', 'STP', 'RSTP', 'MSTP',
             'ACL', 'NAT', 'VPN', 'QoS', 'MPLS', 'VRRP', 'HSRP', 'GLBP',
@@ -87,9 +87,9 @@ def get_feedback_stats(db: Session = Depends(get_db)):
             'IPV4', 'IPV6', 'RIPNG', 'BGP4+', 'IS-IS', 'LDP', 'RSVP'
         ]
         
-        # 從問題表中獲取問題內容進行分類
+        # 从问题表中获取问题内容进行分类
         try:
-            # 假設有 Question 表，如果沒有則使用模擬數據
+            # 假设有 Question 表，如果没有则使用模拟数据
             questions_query = text("""
                 SELECT content FROM Question 
                 WHERE content IS NOT NULL AND content != ''
@@ -97,7 +97,7 @@ def get_feedback_stats(db: Session = Depends(get_db)):
             questions = db.execute(questions_query).fetchall()
             
             if questions:
-                # 統計問題分類
+                # 统计问题分类
                 category_count = {}
                 total_questions = 0
                 
@@ -105,7 +105,7 @@ def get_feedback_stats(db: Session = Depends(get_db)):
                     content = question[0].upper() if question[0] else ''
                     total_questions += 1
                     
-                    # 檢查是否包含協議關鍵詞
+                    # 检查是否包含协议关键词
                     found_protocol = None
                     for protocol in protocol_keywords:
                         if protocol in content:
@@ -115,38 +115,38 @@ def get_feedback_stats(db: Session = Depends(get_db)):
                     category = found_protocol if found_protocol else '其他'
                     category_count[category] = category_count.get(category, 0) + 1
                 
-                # 轉換為分佈格式
+                # 转换为分布格式
                 category_distribution = []
                 for category, count in category_count.items():
                     percentage = (count / total_questions * 100) if total_questions > 0 else 0
                     category_distribution.append({
-                        "category": f"{category}相關問題" if category != '其他' else "其他問題",
+                        "category": f"{category}相关问题" if category != '其他' else "其他问题",
                         "count": count,
                         "percentage": round(percentage, 1)
                     })
                 
-                # 按數量排序
+                # 按数量排序
                 category_distribution.sort(key=lambda x: x['count'], reverse=True)
                 
             else:
-                # 如果沒有問題數據，使用模擬數據
+                # 如果没有问题数据，使用模拟数据
                 category_distribution = [
-                    {"category": "OSPF配置問題", "count": 345, "percentage": 28.0},
+                    {"category": "OSPF配置问题", "count": 345, "percentage": 28.0},
                     {"category": "BGP路由通告", "count": 287, "percentage": 23.0},
-                    {"category": "VLAN通信問題", "count": 245, "percentage": 20.0},
-                    {"category": "ACL規則配置", "count": 187, "percentage": 15.0},
-                    {"category": "其他問題", "count": 181, "percentage": 14.0},
+                    {"category": "VLAN通信问题", "count": 245, "percentage": 20.0},
+                    {"category": "ACL规则配置", "count": 187, "percentage": 15.0},
+                    {"category": "其他问题", "count": 181, "percentage": 14.0},
                 ]
                 
         except Exception as e:
             print(f"Error getting question categories: {e}")
-            # 使用模擬數據作為備用
+            # 使用模拟数据作为备用
             category_distribution = [
-                {"category": "OSPF配置問題", "count": 345, "percentage": 28.0},
+                {"category": "OSPF配置问题", "count": 345, "percentage": 28.0},
                 {"category": "BGP路由通告", "count": 287, "percentage": 23.0},
-                {"category": "VLAN通信問題", "count": 245, "percentage": 20.0},
-                {"category": "ACL規則配置", "count": 187, "percentage": 15.0},
-                {"category": "其他問題", "count": 181, "percentage": 14.0},
+                {"category": "VLAN通信问题", "count": 245, "percentage": 20.0},
+                {"category": "ACL规则配置", "count": 187, "percentage": 15.0},
+                {"category": "其他问题", "count": 181, "percentage": 14.0},
             ]
         
         return {
@@ -162,11 +162,11 @@ def get_feedback_stats(db: Session = Depends(get_db)):
 
 @router.post("/feedbacks/")
 def create_feedback(feedback: Dict, db: Session = Depends(get_db)):
-    """創建新反饋"""
+    """创建新反馈"""
     print(f"Received feedback: {feedback}")
     
     try:
-        # 檢查必要參數
+        # 检查必要参数
         user_id = feedback.get("user_id")
         solution_id = feedback.get("solution_id")
         rating = feedback.get("rating")
@@ -175,7 +175,7 @@ def create_feedback(feedback: Dict, db: Session = Depends(get_db)):
         if not user_id or not solution_id or rating is None:
             raise HTTPException(status_code=400, detail="user_id, solution_id and rating are required")
         
-        # 檢查用戶和解決方案是否存在
+        # 检查用户和解决方案是否存在
         db_user = crud.get_user(db, user_id=user_id)
         db_solution = crud.get_solution(db, solution_id=solution_id)
         
@@ -185,7 +185,7 @@ def create_feedback(feedback: Dict, db: Session = Depends(get_db)):
         if not db_solution:
             raise HTTPException(status_code=404, detail=f"Solution {solution_id} not found")
         
-        # 創建反饋
+        # 创建反馈
         feedback_schema = schemas.FeedbackCreate(
             solution_id=solution_id,
             user_id=user_id,
@@ -195,7 +195,7 @@ def create_feedback(feedback: Dict, db: Session = Depends(get_db)):
         db_feedback = crud.create_feedback(db=db, feedback=feedback_schema)
         print(f"Created feedback: {db_feedback.feedback_id}")
         
-        # 回傳回應
+        # 回传回应
         return {
             "success": True,
             "feedback_id": db_feedback.feedback_id,
@@ -213,18 +213,18 @@ def create_feedback(feedback: Dict, db: Session = Depends(get_db)):
 
 @router.put("/feedbacks/{feedback_id}/status")
 def update_feedback_status(feedback_id: str, status_data: Dict, db: Session = Depends(get_db)):
-    """更新反饋狀態"""
+    """更新反馈状态"""
     try:
         status = status_data.get("status")
         if not status:
             raise HTTPException(status_code=400, detail="Status is required")
         
-        # 獲取反饋
+        # 获取反馈
         feedback = db.query(Feedback).filter(Feedback.feedback_id == feedback_id).first()
         if not feedback:
             raise HTTPException(status_code=404, detail=f"Feedback {feedback_id} not found")
         
-        # 更新狀態
+        # 更新状态
         feedback.status = status
         db.commit()
         
@@ -238,11 +238,11 @@ def update_feedback_status(feedback_id: str, status_data: Dict, db: Session = De
 
 @router.get("/questions/categories")
 def get_question_categories(db: Session = Depends(get_db)):
-    """獲取問題分類統計"""
+    """获取问题分类统计"""
     try:
         from sqlalchemy import text
         
-        # 定義協議關鍵詞列表
+        # 定义协议关键词列表
         protocol_keywords = [
             'OSPF', 'BGP', 'RIP', 'EIGRP', 'VLAN', 'STP', 'RSTP', 'MSTP',
             'ACL', 'NAT', 'VPN', 'QoS', 'MPLS', 'VRRP', 'HSRP', 'GLBP',
@@ -251,7 +251,7 @@ def get_question_categories(db: Session = Depends(get_db)):
             'IPV4', 'IPV6', 'RIPNG', 'BGP4+', 'IS-IS', 'LDP', 'RSVP'
         ]
         
-        # 從問題表中獲取問題內容進行分類
+        # 从问题表中获取问题内容进行分类
         try:
             questions_query = text("""
                 SELECT content FROM Question 
@@ -260,7 +260,7 @@ def get_question_categories(db: Session = Depends(get_db)):
             questions = db.execute(questions_query).fetchall()
             
             if questions:
-                # 統計問題分類
+                # 统计问题分类
                 category_count = {}
                 total_questions = 0
                 
@@ -268,7 +268,7 @@ def get_question_categories(db: Session = Depends(get_db)):
                     content = question[0].upper() if question[0] else ''
                     total_questions += 1
                     
-                    # 檢查是否包含協議關鍵詞
+                    # 检查是否包含协议关键词
                     found_protocol = None
                     for protocol in protocol_keywords:
                         if protocol in content:
@@ -278,7 +278,7 @@ def get_question_categories(db: Session = Depends(get_db)):
                     category = found_protocol if found_protocol else '其他'
                     category_count[category] = category_count.get(category, 0) + 1
                 
-                # 轉換為分佈格式
+                # 转换为分布格式
                 categories = []
                 for category, count in category_count.items():
                     percentage = (count / total_questions * 100) if total_questions > 0 else 0
@@ -288,7 +288,7 @@ def get_question_categories(db: Session = Depends(get_db)):
                         "percentage": round(percentage, 1)
                     })
                 
-                # 按數量排序
+                # 按数量排序
                 categories.sort(key=lambda x: x['count'], reverse=True)
                 
                 return {

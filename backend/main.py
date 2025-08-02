@@ -5,18 +5,18 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# 使用正確的導入路徑
+# 使用正确的导入路径
 from backend.database.base import Base
 from backend.database.database import engine
 from backend.database.routers import users, chat, feedbacks, protocols, knowledge
 
 # Create all database tables
-# 只創建不存在的表，不刪除現有表
+# 只创建不存在的表，不删除现有表
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# 更新CORS設置 - 明確列出所有可能的源
+# 更新CORS设置 - 明确列出所有可能的源
 origins = [
     "http://localhost",
     "http://localhost:8080",
@@ -26,7 +26,7 @@ origins = [
     "http://10.0.2.2",
     "capacitor://localhost",
     "ionic://localhost",
-    "*",  # 允許所有來源，僅用於開發環境
+    "*",  # 允许所有来源，仅用于开发环境
 ]
 
 app.add_middleware(

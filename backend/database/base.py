@@ -29,8 +29,8 @@ class User(Base):
 class Protocol(Base):
     __tablename__ = "protocols"
     protocol_id = Column(String(255), primary_key=True, default=lambda: str(uuid.uuid4()))
-    name = Column(String(255), nullable=False, comment="協定名稱, 例如: BGP, OSPF")
-    rfc_number = Column(String(255), comment="相關的 RFC 文件編號")
+    name = Column(String(255), nullable=False, comment="协定名称, 例如: BGP, OSPF")
+    rfc_number = Column(String(255), comment="相关的 RFC 文件编号")
 
     knowledge_entries = relationship("Knowledge", back_populates="protocol")
 
@@ -39,7 +39,7 @@ class Knowledge(Base):
     knowledge_id = Column(String(255), primary_key=True, default=lambda: str(uuid.uuid4()))
     protocol_id = Column(String(255), ForeignKey("protocols.protocol_id"), nullable=True)
     content = Column(Text, nullable=False)
-    source = Column(String(2048), nullable=True, comment="知識來源, 如文件名或網址")
+    source = Column(String(2048), nullable=True, comment="知识来源, 如文件名或网址")
     update_time = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     protocol = relationship("Protocol", back_populates="knowledge_entries")
@@ -66,8 +66,8 @@ class Solution(Base):
     __tablename__ = "solutions"
     solution_id = Column(String(255), primary_key=True, default=lambda: str(uuid.uuid4()))
     question_id = Column(String(255), ForeignKey("questions.question_id"), nullable=False, unique=True)
-    steps = Column(Text, nullable=True, comment="分步解決方案的內容")
-    confidence_score = Column(Float, nullable=True, comment="系統對解決方案準確性的置信度評分 (0.0 - 1.0)")
+    steps = Column(Text, nullable=True, comment="分步解决方案的内容")
+    confidence_score = Column(Float, nullable=True, comment="系统对解决方案准确性的置信度评分 (0.0 - 1.0)")
 
     question = relationship("Question", back_populates="solution")
     feedbacks = relationship("Feedback", back_populates="solution")
@@ -82,10 +82,10 @@ class Feedback(Base):
     feedback_id = Column(String(255), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(255), ForeignKey("users.user_id"), nullable=False)
     solution_id = Column(String(255), ForeignKey("solutions.solution_id"), nullable=False)
-    rating = Column(Integer, nullable=True, comment="使用者給出的評分")
+    rating = Column(Integer, nullable=True, comment="使用者给出的评分")
     comment = Column(Text, nullable=True)
-    status = Column(String(255), nullable=True, default="待處理", comment="反饋狀態: 待處理, 處理中, 已處理")
-    created_at = Column(DateTime, server_default=func.now(), comment="創建時間")
+    status = Column(String(255), nullable=True, default="待处理", comment="反馈状态: 待处理, 处理中, 已处理")
+    created_at = Column(DateTime, server_default=func.now(), comment="创建时间")
     
     owner = relationship("User", back_populates="feedbacks")
     solution = relationship("Solution", back_populates="feedbacks") 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart'; // 导入 intl 套件
 import '../services/conversation_service.dart';
-import '../models/conversation.dart'; // <--- 新增匯入
+import '../models/conversation.dart'; // <--- 新增导入
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
@@ -28,15 +28,15 @@ class _ChatPageState extends State<ChatPage> {
   List<PlatformFile> _selectedFiles = [];
   final DatabaseService _databaseService = DatabaseService();
 
-  // 熱點問題列表結構
+  // 热点问题列表结构
   List<Map<String, dynamic>> _hotQuestionData = [];
   List<String> get _hotQuestions =>
       _hotQuestionData.map((q) => q['question'] as String).toList();
 
-  // 記錄熱點問題點擊次數
+  // 记录热点问题点击次数
   Map<String, int> _questionClickCount = {};
 
-  // 動畫控制器
+  // 动画控制器
   bool _isHotQuestionsExpanded = true;
 
   @override
@@ -45,7 +45,7 @@ class _ChatPageState extends State<ChatPage> {
     _fetchHotQuestions();
   }
 
-  // 從後端獲取熱點問題
+  // 从后端获取热点问题
   Future<void> _fetchHotQuestions() async {
     try {
       final response = await http.get(
@@ -62,7 +62,7 @@ class _ChatPageState extends State<ChatPage> {
       }
     } catch (e) {
       print('获取热点问题失败: $e');
-      // 使用默認問題
+      // 使用默认问题
       setState(() {
         _hotQuestionData = [
           {"id": "1", "question": "如何配置 OSPF 协议？", "count": 156},
@@ -88,7 +88,7 @@ class _ChatPageState extends State<ChatPage> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            // 左側對話歷史面板
+            // 左侧对话历史面板
             Consumer<ConversationService>(
               builder: (context, service, child) {
                 return Container(
@@ -104,7 +104,7 @@ class _ChatPageState extends State<ChatPage> {
               },
             ),
 
-            // 右側主聊天視窗
+            // 右侧主聊天窗口
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -122,7 +122,7 @@ class _ChatPageState extends State<ChatPage> {
                   builder: (context, service, child) {
                     return Column(
                       children: [
-                        // 頂部標題
+                        // 顶部标题
                         Container(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -137,7 +137,7 @@ class _ChatPageState extends State<ChatPage> {
                                 Text(
                                   service.currentConversation!.title ?? '新对话',
                                   style: const TextStyle(
-                                    fontSize: 20, // 放大字體
+                                    fontSize: 20, // 放大字体
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF333333),
                                   ),
@@ -155,13 +155,13 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                         const Divider(height: 1),
 
-                        // 主內容區（對話歷史 + 輸入框）
+                        // 主内容区（对话历史 + 输入框）
                         Expanded(
                           child: Column(
                             children: [
-                              // 對話歷史
+                              // 对话历史
                               Expanded(child: _buildChatHistory(service)),
-                              // 輸入區域
+                              // 输入区域
                               _buildInputArea(service),
                             ],
                           ),
@@ -201,17 +201,17 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
-    // 過濾重複的 assistant 氣泡，只保留最後一條內容不為空的 assistant 訊息
+    // 过滤重复的 assistant 气泡，只保留最后一条内容不为空的 assistant 消息
     final List<Message> filteredMessages = [];
     for (int i = 0; i < conversation.messages.length; i++) {
       final msg = conversation.messages[i];
-      // 如果是 assistant，且內容為空，且不是最後一條，則跳過
+      // 如果是 assistant，且内容为空，且不是最后一条，则跳过
       if (msg.role == 'assistant' &&
           msg.content.trim().isEmpty &&
           i != conversation.messages.length - 1) {
         continue;
       }
-      // 如果是 assistant，且上一條也是 assistant，且內容為空，則跳過
+      // 如果是 assistant，且上一条也是 assistant，且内容为空，则跳过
       if (msg.role == 'assistant' &&
           msg.content.trim().isEmpty &&
           i > 0 &&
@@ -268,7 +268,7 @@ class _ChatPageState extends State<ChatPage> {
         onFeedbackSubmitted: () {
           // 使用静态方法通知看板刷新
           DashboardPageState.refreshDashboard();
-          // 強制刷新看板
+          // 强制刷新看板
           DashboardPageState.forceRefresh();
           ScaffoldMessenger.of(
             context,
@@ -278,7 +278,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  // 舊的反饋對話框，已被替換
+  // 旧的反馈对话框，已被替换
   void _showOldFeedbackDialog(Message message, int rating) {
     final TextEditingController commentController = TextEditingController();
     showDialog(
@@ -340,7 +340,7 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildMessageBubble(Message message) {
     final isUser = message.role == 'user';
 
-    // 檢查消息內容是否顯示為思考中狀態
+    // 检查消息内容是否显示为思考中状态
     final isThinking = message.content == '思考中...';
 
     return Padding(

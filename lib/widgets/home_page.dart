@@ -68,7 +68,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _sendAIMessage(ConversationService service) async {
     try {
-      // 使用後端服務而不是直接呼叫 Kimi API
+      // 使用后端服务而不是直接调用 Kimi API
       await service.sendMessage(
         service.currentConversation!.messages.last.content,
       );
@@ -257,7 +257,7 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
                 const SizedBox(height: 40),
-                // 熱門問題分區
+                // 热门问题分区
                 Text(
                   '热门问题',
                   style: TextStyle(

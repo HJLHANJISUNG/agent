@@ -7,9 +7,9 @@ class Sidebar extends StatelessWidget {
   final VoidCallback onCollapse;
   final int currentPageIndex;
   final Function(int) onPageChange;
-  final VoidCallback onLogout; // 新增登出回呼
+  final VoidCallback onLogout; // 新增登出回调
   final bool isAdmin;
-  final String userName; // 新增用戶名參數
+  final String userName; // 新增用户名参数
 
   Sidebar({
     super.key,
@@ -17,17 +17,17 @@ class Sidebar extends StatelessWidget {
     required this.onCollapse,
     required this.currentPageIndex,
     required this.onPageChange,
-    required this.onLogout, // 新增到建構函式
+    required this.onLogout, // 新增到建构函数
     this.isAdmin = false,
-    required this.userName, // 新增到建構函式
+    required this.userName, // 新增到建构函数
   });
 
-  final Color sidebarColor = const Color(0xFFFF4B2B); // 主紅橙色
+  final Color sidebarColor = const Color(0xFFFF4B2B); // 主红橙色
   final Color sidebarHighlight = const Color(0xFFFF6A3D); // 高亮橙
 
   @override
   Widget build(BuildContext context) {
-    // 假設用戶資訊可從 Provider 或 context 取得，這裡用假資料 admin/isAdmin
+    // 假设用户信息可从 Provider 或 context 取得，这里用假数据 admin/isAdmin
     final bool isAdmin = this.isAdmin;
     return Container(
       decoration: BoxDecoration(
@@ -59,7 +59,7 @@ class Sidebar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20), // 进一步减少顶部间距
-                  // LOGO + 標題
+                  // LOGO + 标题
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: open ? 24 : 0),
                     child: Row(
@@ -167,7 +167,7 @@ class Sidebar extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 16), // 减少间距
-                  // 導航按鈕 - 使用更紧凑的布局
+                  // 导航按钮 - 使用更紧凑的布局
                   _buildNavItem('首页', Icons.home, 0, context),
                   _buildNavItem('问答', Icons.chat, 1, context),
                   _buildNavItem('知识库', Icons.library_books, 2, context),
@@ -176,7 +176,7 @@ class Sidebar extends StatelessWidget {
               ),
             ),
           ),
-          // 收合按鈕
+          // 收合按钮
           const Divider(color: Colors.white30, indent: 16, endIndent: 16),
           Padding(
             padding: EdgeInsets.symmetric(

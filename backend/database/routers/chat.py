@@ -16,7 +16,7 @@ from pydantic import BaseModel
 import traceback
 import jwt
 from typing import Optional
-from backend.database.routers.users import SECRET_KEY, ALGORITHM  # 導入 users.py 中的 JWT 設定
+from backend.database.routers.users import SECRET_KEY, ALGORITHM  # 导入 users.py 中的 JWT 设置
 
 router = APIRouter()
 
@@ -31,7 +31,7 @@ def get_db():
     finally:
         db.close()
 
-# 驗證 JWT token
+# 验证 JWT token
 async def verify_token(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Authorization header missing")
@@ -47,7 +47,7 @@ async def verify_token(authorization: Optional[str] = Header(None), db: Session 
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")
         
-        # 驗證用戶是否存在
+        # 验证用户是否存在
         user = crud.get_user(db, user_id=user_id)
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
@@ -59,7 +59,6 @@ async def verify_token(authorization: Optional[str] = Header(None), db: Session 
         raise HTTPException(status_code=401, detail=f"Authentication error: {str(e)}")
 
 async def save_upload_file(upload_file: UploadFile) -> str:
-    """保存上传的文件并返回相对路径"""
     # 生成唯一文件名
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     unique_filename = f"{timestamp}_{uuid.uuid4().hex[:8]}_{upload_file.filename}"
@@ -80,11 +79,11 @@ def get_ai_response(question_content: str) -> Dict:
     )
 
     try:
-        # 實際API調用
+        # 实际API调用
         completion = client.chat.completions.create(
             model="moonshot-v1-8k",
             messages=[
-                {"role": "system", "content": "你是 Kimi，由 Moonshot AI 提供的人工智能助手。請盡可能給出結構化的回答，使用適當的標題、項目符號和代碼塊來提高可讀性。"},
+                {"role": "system", "content": "你是 Kimi，由 Moonshot AI 提供的人工智能助手。请尽可能给出结构化的回答，使用适当的标题、项目符号和代码块来提高可读性。"},
                 {"role": "user", "content": question_content}
             ],
             temperature=0.3,
@@ -93,76 +92,76 @@ def get_ai_response(question_content: str) -> Dict:
         confidence = 0.95
         return {"steps": ai_steps, "confidence_score": confidence}
     except Exception as e:
-        # 如果API調用失敗，返回模擬數據
-        print(f"AI API調用失敗，使用模擬數據: {e}")
-        # 根據問題內容生成一個簡單的回應
+        # 如果API调用失败，返回模拟数据
+        print(f"AI API调用失败，使用模拟数据: {e}")
+        # 根据问题内容生成一个简单的回应
         if "OSPF" in question_content:
-            ai_steps = """OSPF（開放式最短路徑優先）協議是一種內部網關協議，用於在單一自治系統內確定路由。配置OSPF的基本步驟：
+            ai_steps = """OSPF（开放式最短路径优先）协议是一种内部网关协议，用于在单一自治系统内确定路由。配置OSPF的基本步骤：
 
-1. 啟用OSPF進程：
+1. 启用OSPF进程：
 ```
 Router(config)# router ospf <process-id>
 ```
 
-2. 設定路由器ID：
+2. 设定路由器ID：
 ```
 Router(config-router)# router-id <ip-address>
 ```
 
-3. 定義要通告的網絡：
+3. 定义要通告的网络：
 ```
 Router(config-router)# network <ip-address> <wildcard-mask> area <area-id>
 ```
 
-4. 配置OSPF區域：
+4. 配置OSPF区域：
 ```
 Router(config-router)# area <area-id> <type>
 ```
 
-5. 驗證配置：
+5. 验证配置：
 ```
 Router# show ip ospf
 Router# show ip ospf neighbor
 Router# show ip route ospf
 ```
 
-要注意的關鍵點：
-- 使用單一區域可簡化配置
-- 合理設計區域邊界以減少LSA通告
-- 考慮使用認證增強安全性
-- 適當調整Hello間隔和Dead時間"""
+要注意的关键点：
+- 使用单一区域可简化配置
+- 合理设计区域边界以减少LSA通告
+- 考虑使用认证增强安全性
+- 适当调整Hello间隔和Dead时间"""
         elif "BGP" in question_content:
-            ai_steps = """BGP路由通告失敗的常見原因：
+            ai_steps = """BGP路由通告失败的常见原因：
 
-1. **BGP對等體會話未建立**：
-   - 檢查TCP連接是否成功（端口179）
-   - 確認AS號碼配置正確
-   - 檢查neighbor語句中的IP地址是否正確
+1. **BGP对等体会话未建立**：
+   - 检查TCP连接是否成功（端口179）
+   - 确认AS号码配置正确
+   - 检查neighbor语句中的IP地址是否正确
 
-2. **路由策略或過濾問題**：
-   - 檢查route-map、prefix-list或as-path access-list是否過濾了路由
+2. **路由策略或过滤问题**：
+   - 检查route-map、prefix-list或as-path access-list是否过滤了路由
    - 查看distribute-list或filter-list配置
 
-3. **Next-hop可達性問題**：
-   - 確保next-hop地址可通過IGP到達
-   - 檢查next-hop-self配置是否正確
+3. **Next-hop可达性问题**：
+   - 确保next-hop地址可通过IGP到达
+   - 检查next-hop-self配置是否正确
 
-4. **網絡聲明問題**：
-   - 確認network語句與實際路由表匹配
-   - 檢查network語句中的掩碼設置
+4. **网络声明问题**：
+   - 确认network语句与实际路由表匹配
+   - 检查network语句中的掩码设置
 
-5. **Route Reflection問題**：
-   - 在大型網絡中檢查Route Reflector配置
-   - 確認cluster-id設置正確
+5. **Route Reflection问题**：
+   - 在大型网络中检查Route Reflector配置
+   - 确认cluster-id设置正确
 
-6. **聚合問題**：
-   - 檢查aggregate-address命令是否正確
-   - 確認suppress-map是否錯誤阻止了特定路由
+6. **聚合问题**：
+   - 检查aggregate-address命令是否正确
+   - 确认suppress-map是否错误阻止了特定路由
 
-7. **iBGP全網狀連接缺失**：
-   - 確保所有iBGP對等體之間有直接或通過Route Reflector的連接
+7. **iBGP全网状连接缺失**：
+   - 确保所有iBGP对等体之间有直接或通过Route Reflector的连接
 
-常用診斷命令：
+常用诊断命令：
 ```
 show ip bgp summary
 show ip bgp neighbors
@@ -170,22 +169,22 @@ show ip bgp
 debug ip bgp updates
 ```"""
         else:
-            ai_steps = f"""關於"{question_content}"的回答：
+            ai_steps = f"""关于"{question_content}"的回答：
 
-這是一個關於網絡協議的重要問題。在網絡工程中，正確理解和配置各種協議對確保網絡穩定運行至關重要。
+这是一个关于网络协议的重要问题。在网络工程中，正确理解和配置各种协议对确保网络稳定运行至关重要。
 
-解決這類問題時，我建議：
+解决这类问题时，我建议：
 
-1. 首先確認網絡拓撲和需求
-2. 查閱相關設備的官方文檔
-3. 遵循最佳實踐進行配置
-4. 實施變更前進行充分測試
-5. 保持配置的一致性和可維護性
+1. 首先确认网络拓扑和需求
+2. 查阅相关设备的官方文档
+3. 遵循最佳实践进行配置
+4. 实施变更前进行充分测试
+5. 保持配置的一致性和可维护性
 
-對於更具體的解答，您可以提供更多關於具體網絡環境和設備型號的細節，我可以給出更有針對性的建議。"""
+对于更具体的解答，您可以提供更多关于具体网络环境和设备型号的细节，我可以给出更有针对性的建议。"""
         
-        # 對回答進行預處理，插入適當的延遲標記
-        # 這些標記可以被前端用來控制打字速度
+        # 对回答进行预处理，插入适当的延迟标记
+        # 这些标记可以被前端用来控制打字速度
         ai_steps = ai_steps.replace('\n\n', '\n<pause-long>\n')
         ai_steps = ai_steps.replace('：\n', '：<pause-medium>\n')
         ai_steps = ai_steps.replace('。', '。<pause-short>')
@@ -212,13 +211,13 @@ async def create_chat(
         # 处理 multipart form-data 请求（有文件上传时）
         if content_type.startswith('multipart/form-data'):
             form = await request.form()
-            user_id = current_user.user_id  # 使用已驗證的用戶 ID
+            user_id = current_user.user_id  # 使用已验证的用户 ID
             content = form.get('content')
             files = form.getlist('files')
         # 处理 JSON 请求（无文件上传时）
         else:
             body = await request.json()
-            user_id = current_user.user_id  # 使用已驗證的用戶 ID
+            user_id = current_user.user_id  # 使用已验证的用户 ID
             content = body.get('content')
             files = None
 
@@ -280,38 +279,38 @@ async def create_chat(
         
     except Exception as e:
         print(f"Error in create_chat: {e}")
-        traceback.print_exc() # 添加這行來打印詳細的錯誤堆疊
+        traceback.print_exc() # 添加这行来打印详细的错误堆叠
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}") 
 
 @router.get("/chat/hot-questions")
 async def get_hot_questions():
-    """獲取熱門問題列表"""
+    """获取热门问题列表"""
     try:
-        # 這裡可以從數據庫或緩存中獲取真實的熱門問題
-        # 目前返回靜態數據作為示例
+        # 这里可以从数据库或缓存中获取真实的热门问题
+        # 目前返回静态数据作为示例
         hot_questions = [
-            {"id": "1", "question": "如何配置 OSPF 協議？", "count": 156},
-            {"id": "2", "question": "BGP 路由通告失敗的常見原因", "count": 142},
-            {"id": "3", "question": "VLAN 間通信問題排查步驟", "count": 128},
-            {"id": "4", "question": "ACL 規則配置最佳實踐", "count": 115},
-            {"id": "5", "question": "STP 根橋選舉機制說明", "count": 98},
-            {"id": "6", "question": "如何解決 DHCP 地址分配問題？", "count": 87},
-            {"id": "7", "question": "VPN 隧道建立失敗的排查方法", "count": 76},
-            {"id": "8", "question": "IPv6 部署的關鍵步驟", "count": 65},
+            {"id": "1", "question": "如何配置 OSPF 协议？", "count": 156},
+            {"id": "2", "question": "BGP 路由通告失败的常见原因", "count": 142},
+            {"id": "3", "question": "VLAN 间通信问题排查步骤", "count": 128},
+            {"id": "4", "question": "ACL 规则配置最佳实践", "count": 115},
+            {"id": "5", "question": "STP 根桥选举机制说明", "count": 98},
+            {"id": "6", "question": "如何解决 DHCP 地址分配问题？", "count": 87},
+            {"id": "7", "question": "VPN 隧道建立失败的排查方法", "count": 76},
+            {"id": "8", "question": "IPv6 部署的关键步骤", "count": 65},
         ]
         return hot_questions
     except Exception as e:
-        print(f"獲取熱門問題時出錯: {e}")
+        print(f"获取热门问题时出错: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}") 
 
 @router.post("/chat/hot-questions/{question_id}/click")
 async def record_hot_question_click(question_id: str):
-    """記錄熱門問題的點擊"""
+    """记录热门问题的点击"""
     try:
-        # 這裡應該將點擊記錄到數據庫中
-        # 目前只是打印日誌作為示例
-        print(f"問題 {question_id} 被點擊了")
+        # 这里应该将点击记录到数据库中
+        # 目前只是打印日志作为示例
+        print(f"问题 {question_id} 被点击了")
         return {"success": True, "question_id": question_id}
     except Exception as e:
-        print(f"記錄問題點擊時出錯: {e}")
+        print(f"记录问题点击时出错: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}") 

@@ -4,11 +4,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sys
 
-# 添加父目錄到 sys.path，以便導入 config
 sys.path.append(str(Path(__file__).parent.parent))
 from config import settings
 
-# 使用 config.py 中的設置
+# 使用 config.py 中的设置
 DATABASE_URL = settings.DATABASE_URL
 print(f"Using database URL: {DATABASE_URL}")
 

@@ -16,17 +16,17 @@ Future<void> main() async {
   // 初始化 Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // 初始化 FFI（僅限桌面平台）for sqflite
+  // 初始化 FFI（仅限桌面平台）for sqflite
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
 
-  // 創建 ConversationService 實例並初始化
+  // 创建 ConversationService 实例并初始化
   final conversationService = ConversationService();
   await conversationService.initialize();
 
-  await DatabaseService().insertTestKnowledge(); // 啟動時自動插入測試知識庫數據
+  await DatabaseService().insertTestKnowledge(); // 启动时自动插入测试知识库数据
 
   runApp(
     MultiProvider(
@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'IP智慧解答專家',
+      title: 'IP智慧解答专家',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE60012)),
